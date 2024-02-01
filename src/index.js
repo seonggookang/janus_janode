@@ -490,6 +490,7 @@ function initFrontEnd() {
       }
     });
 
+    //
     socket.on('create', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} create received`);
       const { _id, data: createdata = {} } = evtdata;
@@ -501,7 +502,7 @@ function initFrontEnd() {
         const response = await janodeManagerHandle.create(createdata);
         replyEvent(socket, 'created', response, _id);
         Logger.info(`${LOG_NS} ${remote} created sent`);
-        console.log(response);
+        console.log('response >>> ', response);
       } catch ({ message }) {
         replyError(socket, message, createdata, _id);
       }
@@ -639,12 +640,13 @@ function checkSessions(session, handle, socket, { data, _id }) {
   return true;
 }
 
+// replyeEvent ==> socket.emit의 시작 
 function replyEvent(socket, evtname, data, _id) {
   const evtdata = {
     data,
   };
   if (_id) evtdata._id = _id;
-
+  console.log('evtdata >> ', evtdata.data.list) // vscode 터미널에서 나옴.
   socket.emit(evtname, evtdata);
 }
 

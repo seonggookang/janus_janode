@@ -43,11 +43,30 @@ create_room.onclick = () => {
     talking_events : false, 
     talking_level_threshold : 25, 
     talking_packets_threshold : 100, 
-    permanent : true,// false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
+    permanent : true, // false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
     bitrate: 128000,
     secret: 'adminpwd'
   });
 };
+
+function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
+  socket.emit('create', {
+    data: {
+      room,
+      description,
+      max_publishers,
+      audiocodec,
+      videocodec,
+      talking_events,
+      talking_level_threshold,
+      talking_packets_threshold,
+      permanent,
+      bitrate,
+      secret: 'adminpwd',
+    },
+    _id: getId(),
+  });
+}
 
 list_rooms.onclick = () => {
   _listRooms();
@@ -140,16 +159,27 @@ function join22(room, desc) {
   let extractContent = content && content.substring(0, content.indexOf('('));
   _listRooms(desc);
 
-  join({room: room, display:display_name, token:null});
-  // if(display_name === extractContent && 'list room을 forEach로 돌려서, --- VIDEOROOM (~~~, room description << 이거랑  일치하는게 있으면 실행) ---'){ // 여기에 조건을 하나 더 둬야겠는데? 지금은 무조건 막아버리고 있자나. 
-  //   alert(`Already exist. You can't join`);
-  // } else {
-  //   console.log('기존에 없는 display다. join 가즈아ㅏㅏㅏㅏㅏㅏㅏㅏㅏ!')
-  //   join({room: room, display:display_name, token:null});
-  // }
-  // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
-  //   join({room: room, display:display_name, token:null});
-  // }
+  // join({room: room, display:display_name, token:null});
+  if ( display_name === extractContent && 'list room을 forEach로 돌려서, --- VIDEOROOM (~~~, room description << 이거랑  일치하는게 있으면 실행) ---'){ // 여기에 조건을 하나 더 둬야겠는데? 지금은 무조건 막아버리고 있자나. 
+    alert(`Already exist. You can't join`);
+  } else {
+    console.log('기존에 없는 display다. join 가즈아ㅏㅏㅏㅏㅏㅏㅏㅏㅏ!')
+    join({room: room, display:display_name, token:null});
+
+    // 정말 들어 갈건지 확인 메세지띄움
+    // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
+    //   join({room: room, display:display_name, token:null});
+    // }
+  }
+  
+  // 여기에서 list_rooms에 call요청 해서 room 뭐뭐 있는지 출력
+  socket.on('rooms-list', ({ data }) => {
+    console.log('내가 출력하고 싶은 것들 >> ', room, desc)
+    data.list.forEach(room => {
+      console.log('room.description lalalalala!!!! >>> ', room.description === desc);
+    })
+  });
+  //
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
@@ -389,24 +419,7 @@ function _listRooms(desc) {
   });
 }
 
-function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
-  socket.emit('create', {
-    data: {
-      room,
-      description,
-      max_publishers,
-      audiocodec,
-      videocodec,
-      talking_events,
-      talking_level_threshold,
-      talking_packets_threshold,
-      permanent,
-      bitrate,
-      secret: 'adminpwd',
-    },
-    _id: getId(),
-  });
-}
+
 
 function _destroy({ room = myRoom, permanent = false, secret = 'adminpwd' }) {
   socket.emit('destroy', {
@@ -649,7 +662,6 @@ socket.on('rooms-list', ({ data }) => {
   $('#room_list').html('');
   data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
     console.log('rooms >>> ', rooms);
-    console.log(`$('#room_list').html($('#room_list') >>> `, $('#room_list').html($('#room_list').html()));
     $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
   });
 
@@ -829,8 +841,7 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
 
       document.getElementById('locals').appendChild(localVideoContainer);
     }
-  }
-  else {
+  } else {
     const localVideoContainer = document.getElementById('video_' + feed);
     if (display) {
       const nameElem = localVideoContainer.getElementsByTagName('span')[0]; // 이게 뭐지??
@@ -841,6 +852,25 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoStreamElem.srcObject = localStream;
   }
 }
+
+
+////// join을 누른순간 새로운 Room에 대한 저옵가 아래로 추가 되고 화면이 띄워져야지.
+function newRoomJoin(localStream, feed, display, room, description) {
+  
+  const firstVideosTag = document.getElementById('videos')
+
+  const localVideoStreamElem = document.createElement('videos');
+  const localVideoFirstLine = document.createElement('span');
+  localVideoFirstLine.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
+  nameElem.style.display = 'table';
+  localVideoStreamElem.appendChild(localVideoFirstLine)
+  firstVideosTag.appendChild(localVideoFirstLine);
+  
+
+}
+///////
+
+
 
 function setRemoteVideoElement(remoteStream, feed, display) {
   if (!feed) return;

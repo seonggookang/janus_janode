@@ -159,27 +159,27 @@ function join22(room, desc) {
   let extractContent = content && content.substring(0, content.indexOf('('));
   _listRooms(desc);
 
-  // join({room: room, display:display_name, token:null});
-  if ( display_name === extractContent && 'list room을 forEach로 돌려서, --- VIDEOROOM (~~~, room description << 이거랑  일치하는게 있으면 실행) ---'){ // 여기에 조건을 하나 더 둬야겠는데? 지금은 무조건 막아버리고 있자나. 
-    alert(`Already exist. You can't join`);
-  } else {
-    console.log('기존에 없는 display다. join 가즈아ㅏㅏㅏㅏㅏㅏㅏㅏㅏ!')
-    join({room: room, display:display_name, token:null});
+  join({room: room, display:display_name, token:null});
+  // if ( display_name === extractContent && 'list room을 forEach로 돌려서, --- VIDEOROOM (~~~, room description << 이거랑  일치하는게 있으면 실행) ---'){ // 여기에 조건을 하나 더 둬야겠는데? 지금은 무조건 막아버리고 있자나. 
+  //   alert(`Already exist. You can't join`);
+  // } else {
+  //   console.log('기존에 없는 display다. join 가즈아ㅏㅏㅏㅏㅏㅏㅏㅏㅏ!')
+  //   join({room: room, display:display_name, token:null});
 
-    // 정말 들어 갈건지 확인 메세지띄움
-    // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
-    //   join({room: room, display:display_name, token:null});
-    // }
-  }
+  //   // 정말 들어 갈건지 확인 메세지띄움
+  //   // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
+  //   //   join({room: room, display:display_name, token:null});
+  //   // }
+  // }
   
-  // 여기에서 list_rooms에 call요청 해서 room 뭐뭐 있는지 출력
-  socket.on('rooms-list', ({ data }) => {
-    console.log('내가 출력하고 싶은 것들 >> ', room, desc)
-    data.list.forEach(room => {
-      console.log('room.description lalalalala!!!! >>> ', room.description === desc);
-    })
-  });
-  //
+  // // 여기에서 list_rooms에 call요청 해서 room 뭐뭐 있는지 출력
+  // socket.on('rooms-list', ({ data }) => {
+  //   console.log('내가 출력하고 싶은 것들 >> ', room, desc)
+  //   data.list.forEach(room => {
+  //     console.log('room.description lalalalala!!!! >>> ', room.description === desc);
+  //   })
+  // });
+  // //
 }
 
 function join({ room = myRoom, display = myName, token = null }) {

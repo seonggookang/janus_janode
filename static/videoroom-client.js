@@ -143,6 +143,7 @@ function destroy_room(room, desc) {
     }
 };
 
+
 function join22(room, desc) {
   var display_name = $('#display_name').val();
   if (display_name == '') {
@@ -157,8 +158,18 @@ function join22(room, desc) {
   let spanEl = spanContext.querySelector('span');
   let content = spanEl && spanEl.textContent;
   let extractContent = content && content.substring(0, content.indexOf('('));
-  _listRooms(desc);
+  console.log('spanContext >>> ', spanContext);
+  console.log('extractContent >>> ', extractContent); // 이건 화면 바로위의 참석자 이름이고, -- VIDEOROOM에 있는 room description 찾아야지
 
+  let videosElement = document.getElementById('videos');
+  console.log('videos >> ', document.getElementById('videos')); // 여기에서는    --- VIDEOROOM (9408726668196596 , 111) ---  이걸 잘 잡힘
+  let firstSpan = videosElement.querySelector('span');
+
+  // 첫 번째 span 태그의 innerHTML을 가져옵니다.
+  let innerHTML = firstSpan.innerHTML;
+
+  // innerHTML을 콘솔에 출력하거나 다른 용도로 사용합니다.
+  console.log('innerHTML >>> ', innerHTML);
   join({room: room, display:display_name, token:null});
   // if ( display_name === extractContent && 'list room을 forEach로 돌려서, --- VIDEOROOM (~~~, room description << 이거랑  일치하는게 있으면 실행) ---'){ // 여기에 조건을 하나 더 둬야겠는데? 지금은 무조건 막아버리고 있자나. 
   //   alert(`Already exist. You can't join`);

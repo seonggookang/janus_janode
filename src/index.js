@@ -494,7 +494,7 @@ function initFrontEnd() {
     socket.on('create', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} create received`);
       const { _id, data: createdata = {} } = evtdata;
-      console.log('evtdata >> ', evtdata);
+      console.log('create evtdata >> ', evtdata);
 
       if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
 

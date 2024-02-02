@@ -123,63 +123,65 @@
                       </div>
                     </div>
                     <br><br>
-
-                    <!---------------------- 여기부터 create_room 누르면 다시 만들기 ------------------------>
-                    <!-- <div id="videos" style="display: none"> -->
-                    <div id="videos">
-                      <span style="font-size: 16px;"> -- LOCALS -- </span>
-                      <br><br>
-                      <div style="border: 2px; border-color: blueviolet;">
-                        <div id="locals" style="display: flex;"></div>
-                        <div>
-                          <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
-                          <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
-                            class="btn btn-primary btn-xs btn_between">Audio</button>
-                          <button id="videoset" onclick="configure_bitrate_audio_video('video');"
-                            class="btn btn-primary btn-xs btn_between">Video</button>
-                          <div class="btn-group btn-group-xs">
-                            <button id="bitrateset" autocomplete="on"
-                              class="btn btn-primary btn-xs btn_between dropdown-toggle" data-toggle="dropdown">
-                              <span id="Bandwidth_label">128K</span><span class="caret"></span>
-                            </button>
-                            <ul id="bitrate" class="dropdown-menu" role="menu">
-                              <li><a href="#" id="0" onclick="configure_bitrate_audio_video('bitrate', 0);">No limit</a>
-                              </li>
-                              <li><a href="#" id="32" onclick="configure_bitrate_audio_video('bitrate',32000);">Cap to
-                                  32kbit</a></li>
-                              <li><a href="#" id="64" onclick="configure_bitrate_audio_video('bitrate',64000);">Cap to
-                                  64kbit</a></li>
-                              <li><a href="#" id="128" onclick="configure_bitrate_audio_video('bitrate',128000);">Cap to
-                                  128kbit</a></li>
-                              <li><a href="#" id="256" onclick="configure_bitrate_audio_video('bitrate', 256000);">Cap
-                                  to 256kbit</a></li>
-                              <li><a href="#" id="512" onclick="configure_bitrate_audio_video('bitrate', 512000);">Cap
-                                  to 512kbit</a></li>
-                              <li><a href="#" id="1024" onclick="configure_bitrate_audio_video('bitrate', 1024000);">Cap
-                                  to 1mbit</a></li>
-                              <li><a href="#" id="1500" onclick="configure_bitrate_audio_video('bitrate', 1500000);">Cap
-                                  to 1.5mbit</a></li>
-                              <li><a href="#" id="2000" onclick="configure_bitrate_audio_video('bitrate', 2000000);">Cap
-                                  to 2mbit</a></li>
-                            </ul>
+                    <div id='videoWrapper'>
+                      <div id="videos">
+                        <span style="font-size: 16px;"> -- LOCALS -- </span>
+                        <br><br>
+                        <div style="border: 2px; border-color: blueviolet;">
+                          <div id="locals" style="display: flex;"></div>
+                          <div>
+                            <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
+                            <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
+                              class="btn btn-primary btn-xs btn_between">Audio</button>
+                            <button id="videoset" onclick="configure_bitrate_audio_video('video');"
+                              class="btn btn-primary btn-xs btn_between">Video</button>
+                            <div class="btn-group btn-group-xs">
+                              <button id="bitrateset" autocomplete="on"
+                                class="btn btn-primary btn-xs btn_between dropdown-toggle" data-toggle="dropdown">
+                                <span id="Bandwidth_label">128K</span>
+                                <span class="caret"></span>
+                              </button>
+                              <ul id="bitrate" class="dropdown-menu" role="menu">
+                                <li><a href="#" id="0" onclick="configure_bitrate_audio_video('bitrate', 0);">No
+                                    limit</a>
+                                </li>
+                                <li><a href="#" id="32" onclick="configure_bitrate_audio_video('bitrate',32000);">Cap to
+                                    32kbit</a></li>
+                                <li><a href="#" id="64" onclick="configure_bitrate_audio_video('bitrate',64000);">Cap to
+                                    64kbit</a></li>
+                                <li><a href="#" id="128" onclick="configure_bitrate_audio_video('bitrate',128000);">Cap
+                                    to
+                                    128kbit</a></li>
+                                <li><a href="#" id="256" onclick="configure_bitrate_audio_video('bitrate', 256000);">Cap
+                                    to 256kbit</a></li>
+                                <li><a href="#" id="512" onclick="configure_bitrate_audio_video('bitrate', 512000);">Cap
+                                    to 512kbit</a></li>
+                                <li><a href="#" id="1024"
+                                    onclick="configure_bitrate_audio_video('bitrate', 1024000);">Cap
+                                    to 1mbit</a></li>
+                                <li><a href="#" id="1500"
+                                    onclick="configure_bitrate_audio_video('bitrate', 1500000);">Cap
+                                    to 1.5mbit</a></li>
+                                <li><a href="#" id="2000"
+                                    onclick="configure_bitrate_audio_video('bitrate', 2000000);">Cap
+                                    to 2mbit</a></li>
+                              </ul>
+                            </div>
+                          </div>
+                          <div id="local_info" style="display:none">
+                            local_feed: <div id="local_feed" style="display: flex;"></div>
+                            private_id: <div id="private_id" style="display: flex;"></div>
                           </div>
                         </div>
-                        <div id="local_info" style="display:none">
-                          local_feed: <div id="local_feed" style="display: flex;"></div>
-                          private_id: <div id="private_id" style="display: flex;"></div>
-                        </div>
+                        <br><br>
+                        <span style="font-size: 16px;"> -- REMOTES -- </span>
+                        <br><br>
+                        <div id="remotes"
+                          style="display: flex; justify-content: flex-start; overflow-x: auto; flex-wrap: wrap;"></div>
                       </div>
-                      <br><br>
-                      <span style="font-size: 16px;"> -- REMOTES -- </span>
-                      <br><br>
-                      <div id="remotes"
-                        style="display: flex; justify-content: flex-start; overflow-x: auto; flex-wrap: wrap;"></div>
                     </div>
-                    <!--------------- 여기까지를 반복해서 create할 때마다 재생성 ------------>
 
-                    <div>
-                      ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-                    </div>
+
                   </div>
                   <!-- /.card -->
                 </div>

@@ -34,19 +34,69 @@ disconnect.onclick = () => {
 
 create_room.onclick = () => {
   if ($('#new_room_name').val() == '') alert('생성할 방이름을 입력해야 합니다.');
-  else _create({ 
-    room: generateRandomNumber(), 
-    description: $('#new_room_name').val(), 
-    max_publishers : 100, 
-    audiocodec : 'opus', 
-    videocodec : 'vp8', 
-    talking_events : false, 
-    talking_level_threshold : 25, 
-    talking_packets_threshold : 100, 
-    permanent : true, // false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
-    bitrate: 128000,
-    secret: 'adminpwd'
-  });
+  else {
+    
+
+    const secondRoom = document.createElement('div');
+    secondRoom.id = $('#new_room_name').val(); // id값 넣어주고.. 여기서 room의 room( 16자리 난수로는 못넣어주나? )
+    secondRoom.innerHTML = 
+    `------------------------------------------------------------------------------------------------------------
+     <br>    
+     <span style="font-size: 32px; color: yellow;">Room name : ${$('#new_room_name').val()}</span> 
+     <br>
+     <span style="font-size: 16px;"> -- LOCALS -- </span>
+     <br><br>
+
+     <div>
+      <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
+      <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
+        class="btn btn-primary btn-xs btn_between">Audio</button>
+      <button id="videoset" onclick="configure_bitrate_audio_video('video');"
+        class="btn btn-primary btn-xs btn_between">Video</button>
+      <div class="btn-group btn-group-xs">
+        <button id="bitrateset" autocomplete="on"
+          class="btn btn-primary btn-xs btn_between dropdown-toggle" data-toggle="dropdown">
+          <span id="Bandwidth_label">128K</span><span class="caret"></span>
+        </button>
+        <ul id="bitrate" class="dropdown-menu" role="menu">
+          <li><a href="#" id="0" onclick="configure_bitrate_audio_video('bitrate', 0);">No limit</a></li>
+          <li><a href="#" id="32" onclick="configure_bitrate_audio_video('bitrate',32000);">Cap to 32kbit</a></li>
+          <li><a href="#" id="64" onclick="configure_bitrate_audio_video('bitrate',64000);">Cap to 64kbit</a></li>
+          <li><a href="#" id="128" onclick="configure_bitrate_audio_video('bitrate',128000);">Cap to 128kbit</a></li>
+          <li><a href="#" id="256" onclick="configure_bitrate_audio_video('bitrate', 256000);">Cap to 256kbit</a></li>
+          <li><a href="#" id="512" onclick="configure_bitrate_audio_video('bitrate', 512000);">Cap to 512kbit</a></li>
+          <li><a href="#" id="1024" onclick="configure_bitrate_audio_video('bitrate', 1024000);">Cap to 1mbit</a></li>
+          <li><a href="#" id="1500" onclick="configure_bitrate_audio_video('bitrate', 1500000);">Cap to 1.5mbit</a></li>
+          <li><a href="#" id="2000" onclick="configure_bitrate_audio_video('bitrate', 2000000);">Cap to 2mbit</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <br> 
+    -- REMOTES -- 
+    <br><br>`;
+  
+    const firstRoom = document.getElementById('videos');
+    // firstRoom.appendChild(secondRoom);
+    // firstRoom.insertAdjacentElement('afterend', secondRoom);
+    firstRoom.parentNode.appendChild(secondRoom);
+
+    console.log('생성한 방 이름 >> ', $('#new_room_name').val());
+
+    _create({ 
+      room: generateRandomNumber(), 
+      description: $('#new_room_name').val(), 
+      max_publishers : 100, 
+      audiocodec : 'opus', 
+      videocodec : 'vp8', 
+      talking_events : false, 
+      talking_level_threshold : 25, 
+      talking_packets_threshold : 100, 
+      permanent : true, // false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
+      bitrate: 128000,
+      secret: 'adminpwd'
+    });
+  }
 };
 
 function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
@@ -130,12 +180,14 @@ const scheduleConnection2 = (function (room) {
 })();
 
 // const socket = io('https://192.168.50.156:4443/'); // localhost (Peter 주소)
-// const socket = io("https://localhost:4443"); // 내 주소
-const socket = io({
-  rejectUnauthorized: false,
-  autoConnect: false,
-  reconnection: false,
-});
+// const socket = io('https://192.168.50.116:4443/'); // ifconfig << 이건 동작 X
+// const socket = io('https://192.168.50.19:4443/'); // ipconfig
+const socket = io("https://localhost:4443"); // 내 주소
+// const socket = io({
+//   rejectUnauthorized: false,
+//   autoConnect: false,
+//   reconnection: false,
+// });
 
 function destroy_room(room, desc) {
     if (confirm(desc + ' room을 삭제하겠습니까?')) {
@@ -150,47 +202,57 @@ function join22(room, desc) {
     alert('참석할 이름을 입력해야 합니다.');
     return;
   }
-  // 참석할 이름 display_name이 document.getElementById('display_name')라면 join을 막게하세요.
 
-  console.log('desc !!!!!!!!!!!!! >>> ', desc); // 이거랑 list room의 description foreach돌려서 일치하는게 나오면...
+  console.log('내가 방금 클릭한 방의 desc >>> ', desc); // 이거랑 list room의 description foreach돌려서 일치하는게 나오면...
   // console.log('id가 로컬인거 >> ', document.getElementById('locals')); // 바로 dom으로 잡히지가 않네..
   let spanContext = document.getElementById('locals');
   let spanEl = spanContext.querySelector('span');
   let content = spanEl && spanEl.textContent;
   let extractContent = content && content.substring(0, content.indexOf('('));
   console.log('spanContext >>> ', spanContext);
+  console.log('spanEl >>> ', spanEl);
+  console.log('content >>> ', content);
   console.log('extractContent >>> ', extractContent); // 이건 화면 바로위의 참석자 이름이고, -- VIDEOROOM에 있는 room description 찾아야지
-
+  
   let videosElement = document.getElementById('videos');
   console.log('videos >> ', document.getElementById('videos')); // 여기에서는    --- VIDEOROOM (9408726668196596 , 111) ---  이걸 잘 잡힘
-  let firstSpan = videosElement.querySelector('span');
-
-  // 첫 번째 span 태그의 innerHTML을 가져옵니다.
-  let innerHTML = firstSpan.innerHTML;
-
-  // innerHTML을 콘솔에 출력하거나 다른 용도로 사용합니다.
-  console.log('innerHTML >>> ', innerHTML);
-  join({room: room, display:display_name, token:null});
+  setTimeout(() => {
+    let firstSpan = videosElement.querySelector('span'); // --- VIDEOROOM (9408726668196596 , 111) --- 잘 가져옴.
+    console.log('firstSpan >>> ', firstSpan);
+    setTimeout(() => {
+      let innerHTML = firstSpan.innerHTML;
+      console.log('innerHTML >>> ', innerHTML);
+      let match = innerHTML.match(/\((\d+)\s*,/); // VIDEOROOM 괄호 안의 첫번째 인자 >> room의 16자리 난수, 9408726668196596
+      console.log('match >>> ', match);
+      if (match) {
+        let extractedNumber = +match[1]; // match 배열의 두 번째 요소가 추출된 숫자(+는 숫자화)
+        console.log('setTimeout 안의 room >>> ', room);
+        console.log('setTimeout 안의 extractedNumber >>> ', extractedNumber);
+        if ( extractedNumber === room ) {
+          alert(`Already exist. You can't join`);
+          console.log('extractedNumber === room 일치') // 아무것도 없는 상태에서도 일치라는 값이 나온다..
+        } else {
+          console.log('extractedNumber === room 불일치')
+          join({room: room, display:display_name, token:null});
+        }
+      } else { // -- LOCALS -- 일 때 실행되는거 >> 최초 1회 시행.
+        join({room: room, display:display_name, token:null});
+      }
+    }, 5); // 5ms
+  }, 0);
+  
+  // join({room: room, display:display_name, token:null});
   // if ( display_name === extractContent && 'list room을 forEach로 돌려서, --- VIDEOROOM (~~~, room description << 이거랑  일치하는게 있으면 실행) ---'){ // 여기에 조건을 하나 더 둬야겠는데? 지금은 무조건 막아버리고 있자나. 
   //   alert(`Already exist. You can't join`);
   // } else {
   //   console.log('기존에 없는 display다. join 가즈아ㅏㅏㅏㅏㅏㅏㅏㅏㅏ!')
   //   join({room: room, display:display_name, token:null});
-
-  //   // 정말 들어 갈건지 확인 메세지띄움
-  //   // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
-  //   //   join({room: room, display:display_name, token:null});
-  //   // }
   // }
   
-  // // 여기에서 list_rooms에 call요청 해서 room 뭐뭐 있는지 출력
-  // socket.on('rooms-list', ({ data }) => {
-  //   console.log('내가 출력하고 싶은 것들 >> ', room, desc)
-  //   data.list.forEach(room => {
-  //     console.log('room.description lalalalala!!!! >>> ', room.description === desc);
-  //   })
-  // });
-  // //
+  // 이 밑처럼 할 필요가 없는게 이미 join22를 누를 때 내가 뭘 눌렀는지 알 수 가 있음. 예를 들어,
+  console.log('내가 뭘 눌렀나에 대한 정보 >> ' , room, desc); // 9408726668196596 111
+  // 그니까 뭐 아래처럼 또 루프를 돌릴 필요가 없는거지. 주석 처리해 일단.
+  // 이제 나온 정보 room이랑 위에서 뽑은 extractedNumber랑 매칭 시켜서 맞으면 join NO!, 매칭 안되면 join!
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
@@ -240,7 +302,7 @@ function trickle({ feed, candidate }) {
 }
 
 function configure({ feed, jsep, restart, substream, temporal }) {
-  console.log('feed======', feed);
+  console.log('feed >> ', feed);
   const configureData = {
     feed,
     audio: true,
@@ -261,16 +323,16 @@ function configure({ feed, jsep, restart, substream, temporal }) {
 
   if (jsep) pendingOfferMap.set(configId, { feed });
 }
-function configure_bitrate_audio_video(mode) {
-  var feed = $('#local_feed').text();
+function configure_bitrate_audio_video(mode, bitrate=0) {
+  let feed = parseInt($('#local_feed').text());
 
   if (mode == 'bitrate') {
-    var configureData = {
+    let configureData = {
       feed,
-      bitrate: '12800',
+      bitrate: bitrate,
     };
-    // var bitrate_label = ((bitrate / 1000) > 1000) ? (bitrate / 1000 / 1000) + 'M' : (bitrate / 1000) + 'K';
-    // $('#Bandwidth_label').text(bitrate_label);
+    let bitrate_label = ((bitrate / 1000) > 1000) ? (bitrate / 1000 / 1000) + 'M' : (bitrate / 1000) + 'K';
+    $('#Bandwidth_label').text(bitrate_label);
     socket.emit('configure', {
       data: configureData,
       _id: getId(),
@@ -549,10 +611,7 @@ socket.on('videoroom-error', ({ error, _id }) => {
 });
 
 socket.on('joined', async ({ data }) => {
-  console.log(`data in socket.on('joined') >>> `, data);
-  console.log('data.display >>> ', data.display); // TEST_50986
-  console.log('data.description >>> ', data.description); // 222
-  // 여기다가 if() 로 해야하나? data.description === 
+  console.log('joined data >> ', data);
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
   $('#curr_room_name').val(data.description);
@@ -667,19 +726,13 @@ socket.on('exists', ({ data }) => {
 });
 
 socket.on('rooms-list', ({ data }) => {
-  // console.log('data >>>>>> ', data); // janus.plugin.videoroom.jcfg 코드 에서 옴.
+  // console.log('어떤 방들이 존재하나? >> ', data.list); // janus.plugin.videoroom.jcfg 코드 에서 옴.
   // var parsedData = JSON.parse(data);
-  console.log('data in rooms-list >>>>>> ', data); // 서버로 부터 오는 정보.
+  // console.log('data in rooms-list >>>>>> ', data); // 서버로 부터 오는 정보.
   $('#room_list').html('');
   data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
-    console.log('rooms >>> ', rooms);
     $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
   });
-
-  // 현재 방 목록의 description
-  data.list.forEach(room => {
-    console.log('room.description >>> ', room.description);
-  })
 });
 
 socket.on('created', ({ data }) => {
@@ -827,14 +880,15 @@ async function doAnswer(feed, display, offer) {
 }
 
 function setLocalVideoElement(localStream, feed, display, room, description) {
-  if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '   --- VIDEOROOM (' + room + ' , ' + description +') ---  '; // 로컬 --- LOCALS --- 에서 치환
+  console.log('room >> ', room); // 16자리 난수 값
+  if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
     const nameElem = document.createElement('span');
     nameElem.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
     nameElem.style.display = 'table';
-
+    console.log('room >> ', room); // undefined
     if (localStream) {
       const localVideoStreamElem = document.createElement('video');
       //localVideo.id = 'video_'+feed;
@@ -850,7 +904,7 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.appendChild(nameElem);
       localVideoContainer.appendChild(localVideoStreamElem);
 
-      document.getElementById('locals').appendChild(localVideoContainer);
+      document.getElementById('locals').appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
     }
   } else {
     const localVideoContainer = document.getElementById('video_' + feed);

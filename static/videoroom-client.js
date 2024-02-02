@@ -35,53 +35,49 @@ disconnect.onclick = () => {
 create_room.onclick = () => {
   if ($('#new_room_name').val() == '') alert('생성할 방이름을 입력해야 합니다.');
   else {
-    
-
+    console.log('생성한 방 이름 create onclick---- ', $('#new_room_name').val());
     const secondRoom = document.createElement('div');
     secondRoom.id = $('#new_room_name').val(); // id값 넣어주고.. 여기서 room의 room( 16자리 난수로는 못넣어주나? )
     secondRoom.innerHTML = 
     `------------------------------------------------------------------------------------------------------------
      <br>    
      <span style="font-size: 32px; color: yellow;">Room name : ${$('#new_room_name').val()}</span> 
-     <br>
-     <span style="font-size: 16px;"> -- LOCALS -- </span>
      <br><br>
 
-     <div>
-      <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
-      <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
-        class="btn btn-primary btn-xs btn_between">Audio</button>
-      <button id="videoset" onclick="configure_bitrate_audio_video('video');"
-        class="btn btn-primary btn-xs btn_between">Video</button>
-      <div class="btn-group btn-group-xs">
-        <button id="bitrateset" autocomplete="on"
-          class="btn btn-primary btn-xs btn_between dropdown-toggle" data-toggle="dropdown">
-          <span id="Bandwidth_label">128K</span><span class="caret"></span>
-        </button>
-        <ul id="bitrate" class="dropdown-menu" role="menu">
-          <li><a href="#" id="0" onclick="configure_bitrate_audio_video('bitrate', 0);">No limit</a></li>
-          <li><a href="#" id="32" onclick="configure_bitrate_audio_video('bitrate',32000);">Cap to 32kbit</a></li>
-          <li><a href="#" id="64" onclick="configure_bitrate_audio_video('bitrate',64000);">Cap to 64kbit</a></li>
-          <li><a href="#" id="128" onclick="configure_bitrate_audio_video('bitrate',128000);">Cap to 128kbit</a></li>
-          <li><a href="#" id="256" onclick="configure_bitrate_audio_video('bitrate', 256000);">Cap to 256kbit</a></li>
-          <li><a href="#" id="512" onclick="configure_bitrate_audio_video('bitrate', 512000);">Cap to 512kbit</a></li>
-          <li><a href="#" id="1024" onclick="configure_bitrate_audio_video('bitrate', 1024000);">Cap to 1mbit</a></li>
-          <li><a href="#" id="1500" onclick="configure_bitrate_audio_video('bitrate', 1500000);">Cap to 1.5mbit</a></li>
-          <li><a href="#" id="2000" onclick="configure_bitrate_audio_video('bitrate', 2000000);">Cap to 2mbit</a></li>
-        </ul>
-      </div>
-    </div>
+     <div style="border: 2px; border-color: blueviolet;">
+      <div id="locals_${$('#new_room_name').val()}" style="display: flex;"></div>
+      <div>
+        <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
+        <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
+          class="btn btn-primary btn-xs btn_between">Audio</button>
+        <button id="videoset" onclick="configure_bitrate_audio_video('video');"
+          class="btn btn-primary btn-xs btn_between">Video</button>
+        <div class="btn-group btn-group-xs">
+          <button id="bitrateset" autocomplete="on"
+            class="btn btn-primary btn-xs btn_between dropdown-toggle" data-toggle="dropdown">
+            <span id="Bandwidth_label">128K</span><span class="caret"></span>
+          </button>
+          <ul id="bitrate" class="dropdown-menu" role="menu">
+            <li><a href="#" id="0" onclick="configure_bitrate_audio_video('bitrate', 0);">No limit</a></li>
+            <li><a href="#" id="32" onclick="configure_bitrate_audio_video('bitrate',32000);">Cap to 32kbit</a></li>
+            <li><a href="#" id="64" onclick="configure_bitrate_audio_video('bitrate',64000);">Cap to 64kbit</a></li>
+            <li><a href="#" id="128" onclick="configure_bitrate_audio_video('bitrate',128000);">Cap to 128kbit</a></li>
+            <li><a href="#" id="256" onclick="configure_bitrate_audio_video('bitrate', 256000);">Cap to 256kbit</a></li>
+            <li><a href="#" id="512" onclick="configure_bitrate_audio_video('bitrate', 512000);">Cap to 512kbit</a></li>
+            <li><a href="#" id="1024" onclick="configure_bitrate_audio_video('bitrate', 1024000);">Cap to 1mbit</a></li>
+            <li><a href="#" id="1500" onclick="configure_bitrate_audio_video('bitrate', 1500000);">Cap to 1.5mbit</a></li>
+            <li><a href="#" id="2000" onclick="configure_bitrate_audio_video('bitrate', 2000000);">Cap to 2mbit</a></li>
+          </ul>
+         </div>
+       </div>
+     </div>
 
     <br> 
     -- REMOTES -- 
     <br><br>`;
   
     const firstRoom = document.getElementById('videos');
-    // firstRoom.appendChild(secondRoom);
-    // firstRoom.insertAdjacentElement('afterend', secondRoom);
     firstRoom.parentNode.appendChild(secondRoom);
-
-    console.log('생성한 방 이름 >> ', $('#new_room_name').val());
 
     _create({ 
       room: generateRandomNumber(), 
@@ -881,14 +877,16 @@ async function doAnswer(feed, display, offer) {
 
 function setLocalVideoElement(localStream, feed, display, room, description) {
   console.log('room >> ', room); // 16자리 난수 값
-  if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
+  console.log('description >> ', description); // 16자리 난수 값
+  // if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
+  if (room) document.getElementById(description).getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
     const nameElem = document.createElement('span');
     nameElem.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
     nameElem.style.display = 'table';
-    console.log('room >> ', room); // undefined
+
     if (localStream) {
       const localVideoStreamElem = document.createElement('video');
       //localVideo.id = 'video_'+feed;
@@ -903,7 +901,8 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.id = 'video_' + feed;
       localVideoContainer.appendChild(nameElem);
       localVideoContainer.appendChild(localVideoStreamElem);
-
+      console.log('locals >> ', document.getElementById('locals'));
+      console.log('description >> ', document.getElementById(description));
       document.getElementById('locals').appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
     }
   } else {

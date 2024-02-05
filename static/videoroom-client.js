@@ -54,7 +54,7 @@ create_room.onclick = () => {
 function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
   const newRoomName = $('#new_room_name').val();
   const secondRoom = document.createElement('div');
-    secondRoom.id = room; // id값으로 room의 room( 16자리 난수로는 못넣어주나? )
+    secondRoom.id = room;
     secondRoom.innerHTML = 
     `------------------------------------------------------------------------------------------------------------
      <br>    
@@ -615,7 +615,8 @@ socket.on('joined', async ({ data }) => {
   $('#curr_room_name').val(data.description);
   $('#leave_all').prop('disabled', false);
   _listRooms(); 
-  setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
+  // setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
+  setLocalVideoElement(null, data.feed, data.display, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
   
   try {
     const offer = await doOffer(data.feed, data.display, false);
@@ -879,16 +880,24 @@ async function doAnswer(feed, display, offer) {
 }
 
 function setLocalVideoElement(localStream, feed, display, room, description) {
-  console.log('room 111 >> ', room); // 16자리 난수 값
   console.log('display 111 >> ', display); // 참석할 이름
+  console.log('feed 111 >> ', feed); // feed
+  console.log('room 111 >> ', room); // 16자리 난수 값
   console.log('description 111 >> ', description); // $('#new_room_name').val(); >>> 방 이름
   // if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
+  // const localVideoContainer = document.createElement('div');
+  // localVideoContainer.id = 'video_' + room;
   if (room) {
+    console.log('클릭하자마자 실행하는 room >> ', room);
     document.getElementById(room).getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
+    console.log('이게 나오면 되는거야 >> ', document.getElementById(`locals_${room}`));// 나온다! >> 이제 여기다가 넣으면됨
+    // document.getElementById(`locals_${room}`).appendChild(localVideoContainer);
   }
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
+  console.log('room 나오나? >> ', room); // 16자리 난수 값
+    
     const nameElem = document.createElement('span');
     nameElem.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
     nameElem.style.display = 'table';
@@ -909,13 +918,36 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.appendChild(localVideoStreamElem);
 
       console.log('display 222 >> ', display); // 나오고
+      console.log('feed 222 >> ', feed); // 나오고
       console.log('room 222 >> ', room); // 16자리 난수 값 -->> undefined
       console.log('description 222 >> ', description); // --->> undefined
-      console.log('feed 222 >> ', feed); // 나오고
       console.log('localStream 222 >> ', localStream); // 나오고
 
       document.getElementById('locals').appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
       // document.getElementById(`locals_${room}`).appendChild(localVideoContainer); //
+    } else { // localStream이 없는 버전으로 새로 넣었더니 돌아간다
+        const localVideoStreamElem = document.createElement('video');
+        //localVideo.id = 'video_'+feed;
+        localVideoStreamElem.width = 320;
+        localVideoStreamElem.height = 240;
+        localVideoStreamElem.autoplay = true;
+        localVideoStreamElem.muted = 'muted';
+        localVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
+        localVideoStreamElem.srcObject = localStream;
+
+        const localVideoContainer = document.createElement('div');
+        localVideoContainer.id = 'video_' + feed;
+        localVideoContainer.appendChild(nameElem);
+        localVideoContainer.appendChild(localVideoStreamElem);
+
+        console.log('display 222 >> ', display); // 나오고
+        console.log('feed 222 >> ', feed); // 나오고
+        console.log('room 222 >> ', room); // 16자리 난수 값 -->> undefined
+        console.log('description 222 >> ', description); // --->> undefined
+        console.log('localStream 222 >> ', localStream); // 나오고
+
+        // document.getElementById('locals').appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
+        document.getElementById(`locals_${room}`).appendChild(localVideoContainer); //
     }
   } else {
     const localVideoContainer = document.getElementById('video_' + feed);

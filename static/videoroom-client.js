@@ -38,6 +38,7 @@ create_room.onclick = () => {
     console.log('생성한 방 이름 create onclick---- ', $('#new_room_name').val());
     const secondRoom = document.createElement('div');
     secondRoom.id = $('#new_room_name').val(); // id값 넣어주고.. 여기서 room의 room( 16자리 난수로는 못넣어주나? )
+    
     secondRoom.innerHTML = 
     `------------------------------------------------------------------------------------------------------------
      <br>    
@@ -175,15 +176,16 @@ const scheduleConnection2 = (function (room) {
   });
 })();
 
+// const socket = io('https://janusc.wizbase.co.kr:4443', { autoConnect: false }); // Wisbase
 // const socket = io('https://192.168.50.156:4443/'); // localhost (Peter 주소)
 // const socket = io('https://192.168.50.116:4443/'); // ifconfig << 이건 동작 X
 // const socket = io('https://192.168.50.19:4443/'); // ipconfig
-const socket = io("https://localhost:4443"); // 내 주소
-// const socket = io({
-//   rejectUnauthorized: false,
-//   autoConnect: false,
-//   reconnection: false,
-// });
+// const socket = io("https://localhost:4443"); // 내 주소
+const socket = io({
+  rejectUnauthorized: false,
+  autoConnect: false,
+  reconnection: false,
+});
 
 function destroy_room(room, desc) {
     if (confirm(desc + ' room을 삭제하겠습니까?')) {
@@ -297,8 +299,9 @@ function trickle({ feed, candidate }) {
   });
 }
 
-function configure({ feed, jsep, restart, substream, temporal }) {
-  console.log('feed >> ', feed);
+function configure({ feed, jsep, restart, substream, temporal, just_configure  }) {
+  console.log("================ configure =============");
+  var v_just_configure;
   const configureData = {
     feed,
     audio: true,
@@ -309,16 +312,20 @@ function configure({ feed, jsep, restart, substream, temporal }) {
   if (typeof temporal !== 'undefined') configureData.sc_temporal_layers = temporal;
   if (jsep) configureData.jsep = jsep;
   if (typeof restart === 'boolean') configureData.restart = restart;
+  if (typeof just_configure !== 'undefined') v_just_configure = just_configure;
+  else v_just_configure = false;
 
   const configId = getId();
 
   socket.emit('configure', {
     data: configureData,
     _id: configId,
+    just_configure: v_just_configure,
   });
 
   if (jsep) pendingOfferMap.set(configId, { feed });
 }
+
 function configure_bitrate_audio_video(mode, bitrate=0) {
   let feed = parseInt($('#local_feed').text());
 
@@ -616,7 +623,7 @@ socket.on('joined', async ({ data }) => {
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
   try {
     const offer = await doOffer(data.feed, data.display, false);
-    configure({ feed: data.feed, jsep: offer });
+    configure({ feed: data.feed, jsep: offer, just_configure: false });
     subscribeTo(data.publishers, data.room);
     var vidTrack = localStream.getVideoTracks();
     vidTrack.forEach(track => track.enabled = true); // 이게 false로 돼있어서 join시, 항상 꺼진 화면으로 시작됐음.
@@ -759,11 +766,11 @@ socket.on('rtp-fwd-list', ({ data }) => {
 
 async function _restartPublisher(feed) {
   const offer = await doOffer(feed, null);
-  configure({ feed, jsep: offer });
+  configure({ feed, jsep: offer, just_configure: false });
 }
 
 async function _restartSubscriber(feed) {
-  configure({ feed, restart: true });
+  configure({ feed, restart: true, just_configure: false });
 }
 
 async function doOffer(feed, display) {
@@ -902,8 +909,9 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.appendChild(nameElem);
       localVideoContainer.appendChild(localVideoStreamElem);
       console.log('locals >> ', document.getElementById('locals'));
+      console.log('display >> ', document.getElementById(display));
       console.log('description >> ', document.getElementById(description));
-      document.getElementById('locals').appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
+      document.getElementById(`locals`).appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
     }
   } else {
     const localVideoContainer = document.getElementById('video_' + feed);
@@ -941,16 +949,27 @@ function setRemoteVideoElement(remoteStream, feed, display) {
 
   if (!document.getElementById('video_' + feed)) {
     const nameElem = document.createElement('span');
-    nameElem.innerHTML = display + ' (' + feed + ')';
+    const subscribr_btn = "<button onclick='_restartSubscriber("+feed+");' class='subscribe_again btn btn-primary' style='margin-left:2px;'><i class='fa fa-refresh'></i></button>";
+    nameElem.innerHTML = display + ' (' + feed + ')' + subscribr_btn;
     nameElem.style.display = 'table';
 
     const remoteVideoStreamElem = document.createElement('video');
     remoteVideoStreamElem.width = 320;
     remoteVideoStreamElem.height = 240;
     remoteVideoStreamElem.autoplay = true;
+    remoteVideoStreamElem.setAttribute('feed', feed);
     remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
-    if (remoteStream)
+    if (remoteStream) {
+      console.log('======== remoteStream ============', feed);
+      console.log(remoteStream);
       remoteVideoStreamElem.srcObject = remoteStream;
+    }
+    else {
+      console.log('when video is now shown // 근데 화면이 안나와도 remoteStream은 계속 있다고 나옴.');
+      console.log('remoteStream >>> ', remoteStream);
+      _restartSubscriber(remoteStream);
+    }
+
 
     const remoteVideoContainer = document.createElement('div');
     remoteVideoContainer.id = 'video_' + feed;
@@ -958,16 +977,31 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
     document.getElementById('remotes').appendChild(remoteVideoContainer);
+
+    // blank person 이미지도 함께 추가
+    let blank_person = $('#blank_person').clone();
+    blank_person.attr('id', 'image_' + feed);
+    blank_person.attr('feed', feed);
+    console.log('appendChild... image');
+    blank_person.appendTo( remoteVideoContainer );
   }
   else {
     const remoteVideoContainer = document.getElementById('video_' + feed);
     if (display) {
       const nameElem = remoteVideoContainer.getElementsByTagName('span')[0];
-      nameElem.innerHTML = display + ' (' + feed + ')';
+      const subscribr_btn = "<span onclick='_restartSubscriber("+feed+");' class='subscribe_again btn btn-sm btn-primary' style='margin-left:2px;'><i class='fa fa-refresh'>subscribe</i></span>";
+      nameElem.innerHTML = display + ' (' + feed + ')' + subscribr_btn;
     }
     if (remoteStream) {
+      console.log('======== remoteStream ============', feed);
+      console.log(remoteStream);
       const remoteVideoStreamElem = remoteVideoContainer.getElementsByTagName('video')[0];
       remoteVideoStreamElem.srcObject = remoteStream;
+    }
+    else {
+      console.log('when video is now shown // 근데 화면이 안나와도 remoteStream은 계속 있다고 나옴.');
+      console.log('remoteStream >>> ', remoteStream);
+      _restartSubscriber(remoteStream);
     }
   }
 }

@@ -16,8 +16,13 @@ import VideoRoomPlugin from '../src/plugins/videoroom-plugin.js';
 
 import express from 'express';
 import ejs from "ejs";
-
+// const cors = require('cors');
+import cors from 'cors';
 const app = express();
+app.use(cors({
+  origin: 'http://127.0.0.1:5501', // 허용할 도메인
+  credentials: true, // 필요에 따라 설정
+}));
 const options = {
   key: serverConfig.key ? readFileSync(serverConfig.key) : null,
   cert: serverConfig.cert ? readFileSync(serverConfig.cert) : null,
@@ -281,7 +286,7 @@ function initFrontEnd() {
     socket.on('configure', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} configure received`);
       const { _id, data: confdata = {} } = evtdata;
-      console.log(evtdata);
+      console.log('evtdata in configure >> ', evtdata);
 
       const handle = clientHandles.getHandleByFeed(confdata.feed);
       if (!checkSessions(janodeSession, handle, socket, evtdata)) return;
@@ -494,7 +499,7 @@ function initFrontEnd() {
     socket.on('create', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} create received`);
       const { _id, data: createdata = {} } = evtdata;
-      console.log('create evtdata >> ', evtdata);
+      console.log('evtdata in create >> ', evtdata);
 
       if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
 
@@ -633,7 +638,6 @@ function checkSessions(session, handle, socket, { data, _id }) {
     return false;
   }
   if (!handle) {
-    Logger.info('socket.info >>> ', socket);
     replyError(socket, 'handle-not-available', data, _id);
     return false;
   }
@@ -646,7 +650,7 @@ function replyEvent(socket, evtname, data, _id) {
     data,
   };
   if (_id) evtdata._id = _id;
-  console.log('evtdata >> ', evtdata.data.list) // vscode 터미널에서 나옴.
+  console.log('evtdata in replyEvent>> ', evtdata.data.list) // vscode 터미널에서 나옴.
   socket.emit(evtname, evtdata);
 }
 

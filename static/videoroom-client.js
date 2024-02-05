@@ -7,7 +7,7 @@ const RTCPeerConnection = (window.RTCPeerConnection || window.webkitRTCPeerConne
 
 const pcMap = new Map();
 let pendingOfferMap = new Map();
-var myRoom = getURLParameter('room') ? parseInt(getURLParameter('room')) : (getURLParameter('room_str') || 12345555555);
+var myRoom = getURLParameter('room') ? parseInt(getURLParameter('room')) : (getURLParameter('room_str') || 1234);
 const randName = ('John_Doe_' + Math.floor(10000 * Math.random()));
 const myName = getURLParameter('name') || randName;
 
@@ -33,20 +33,19 @@ disconnect.onclick = () => {
 };
 
 create_room.onclick = () => {
-  if ($('#new_room_name').val() == '') alert('생성할 방이름을 입력해야 합니다.');
+  const newRoomName = $('#new_room_name').val();
+  if (newRoomName == '') alert('생성할 방이름을 입력해야 합니다.');
   else {
-    console.log('생성한 방 이름 create onclick---- ', $('#new_room_name').val());
     const secondRoom = document.createElement('div');
-    secondRoom.id = $('#new_room_name').val(); // id값 넣어주고.. 여기서 room의 room( 16자리 난수로는 못넣어주나? )
-    
+    secondRoom.id = newRoomName; // id값으로 room의 room( 16자리 난수로는 못넣어주나? )
     secondRoom.innerHTML = 
     `------------------------------------------------------------------------------------------------------------
      <br>    
-     <span style="font-size: 32px; color: yellow;">Room name : ${$('#new_room_name').val()}</span> 
+     <span style="font-size: 32px; color: yellow;">Room name : ${newRoomName}</span> 
      <br><br>
 
      <div style="border: 2px; border-color: blueviolet;">
-      <div id="locals_${$('#new_room_name').val()}" style="display: flex;"></div>
+      <div id="locals_${newRoomName}" style="display: flex;"></div>
       <div>
         <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
         <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
@@ -82,7 +81,7 @@ create_room.onclick = () => {
 
     _create({ 
       room: generateRandomNumber(), 
-      description: $('#new_room_name').val(), 
+      description: newRoomName, 
       max_publishers : 100, 
       audiocodec : 'opus', 
       videocodec : 'vp8', 
@@ -193,14 +192,12 @@ function destroy_room(room, desc) {
     }
 };
 
-
 function join22(room, desc) {
   var display_name = $('#display_name').val();
   if (display_name == '') {
     alert('참석할 이름을 입력해야 합니다.');
     return;
   }
-
   console.log('내가 방금 클릭한 방의 desc >>> ', desc); // 이거랑 list room의 description foreach돌려서 일치하는게 나오면...
   // console.log('id가 로컬인거 >> ', document.getElementById('locals')); // 바로 dom으로 잡히지가 않네..
   let spanContext = document.getElementById('locals');
@@ -223,7 +220,7 @@ function join22(room, desc) {
       let match = innerHTML.match(/\((\d+)\s*,/); // VIDEOROOM 괄호 안의 첫번째 인자 >> room의 16자리 난수, 9408726668196596
       console.log('match >>> ', match);
       if (match) {
-        let extractedNumber = +match[1]; // match 배열의 두 번째 요소가 추출된 숫자(+는 숫자화)
+        let extractedNumber = +match[1]; // match 배열의 두 번째 요소 추출(+는 숫자화)
         console.log('setTimeout 안의 room >>> ', room);
         console.log('setTimeout 안의 extractedNumber >>> ', extractedNumber);
         if ( extractedNumber === room ) {
@@ -489,13 +486,12 @@ function _exists({ room = myRoom } = {}) {
 }
 
 function _listRooms(desc) {
+  console.log('desc in _listRooms >>> ', desc);
   socket.emit('list-rooms', { // socket.on('rooms-list' 이거랑 매칭 되네 ???
     _id: getId(),
     desc,
   });
 }
-
-
 
 function _destroy({ room = myRoom, permanent = false, secret = 'adminpwd' }) {
   socket.emit('destroy', {
@@ -621,6 +617,7 @@ socket.on('joined', async ({ data }) => {
   $('#leave_all').prop('disabled', false);
   _listRooms(); 
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
+  
   try {
     const offer = await doOffer(data.feed, data.display, false);
     configure({ feed: data.feed, jsep: offer, just_configure: false });
@@ -729,7 +726,7 @@ socket.on('exists', ({ data }) => {
 });
 
 socket.on('rooms-list', ({ data }) => {
-  // console.log('어떤 방들이 존재하나? >> ', data.list); // janus.plugin.videoroom.jcfg 코드 에서 옴.
+  console.log('어떤 방들이 존재하나? >> ', data.list); // janus.plugin.videoroom.jcfg 코드 에서 옴.
   // var parsedData = JSON.parse(data);
   // console.log('data in rooms-list >>>>>> ', data); // 서버로 부터 오는 정보.
   $('#room_list').html('');
@@ -883,8 +880,9 @@ async function doAnswer(feed, display, offer) {
 }
 
 function setLocalVideoElement(localStream, feed, display, room, description) {
-  console.log('room >> ', room); // 16자리 난수 값
-  console.log('description >> ', description); // 16자리 난수 값
+  console.log('room 111 >> ', room); // 16자리 난수 값
+  console.log('display 111 >> ', display); // 참석할 이름
+  console.log('description 111 >> ', description); // $('#new_room_name').val(); >>> 방 이름
   // if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
   if (room) document.getElementById(description).getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
   if (!feed) return;
@@ -909,9 +907,12 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.appendChild(nameElem);
       localVideoContainer.appendChild(localVideoStreamElem);
       console.log('locals >> ', document.getElementById('locals'));
-      console.log('display >> ', document.getElementById(display));
-      console.log('description >> ', document.getElementById(description));
+      console.log('display 222 >> ', display); // 참석할 이름
+      console.log('room 222 >> ', room); // 16자리 난수 값
+      console.log('description 222 >> ', description); // 이게 잡히지 않고 null로 나옴
+      // console.log('description >> ', document.getElementById(description));
       document.getElementById(`locals`).appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
+      // document.getElementById(`locals_${description}`).appendChild(localVideoContainer); //
     }
   } else {
     const localVideoContainer = document.getElementById('video_' + feed);

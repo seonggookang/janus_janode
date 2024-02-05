@@ -33,11 +33,28 @@ disconnect.onclick = () => {
 };
 
 create_room.onclick = () => {
-  const newRoomName = $('#new_room_name').val();
-  if (newRoomName == '') alert('생성할 방이름을 입력해야 합니다.');
+  if ($('#new_room_name').val() == '') alert('생성할 방이름을 입력해야 합니다.');
   else {
-    const secondRoom = document.createElement('div');
-    secondRoom.id = newRoomName; // id값으로 room의 room( 16자리 난수로는 못넣어주나? )
+    _create({ 
+      room: generateRandomNumber(), 
+      description: $('#new_room_name').val(), 
+      max_publishers : 100, 
+      audiocodec : 'opus', 
+      videocodec : 'vp8', 
+      talking_events : false, 
+      talking_level_threshold : 25, 
+      talking_packets_threshold : 100, 
+      permanent : false, // false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
+      bitrate: 128000,
+      secret: 'adminpwd'
+    });
+  }
+};
+
+function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
+  const newRoomName = $('#new_room_name').val();
+  const secondRoom = document.createElement('div');
+    secondRoom.id = room; // id값으로 room의 room( 16자리 난수로는 못넣어주나? )
     secondRoom.innerHTML = 
     `------------------------------------------------------------------------------------------------------------
      <br>    
@@ -45,7 +62,7 @@ create_room.onclick = () => {
      <br><br>
 
      <div style="border: 2px; border-color: blueviolet;">
-      <div id="locals_${newRoomName}" style="display: flex;"></div>
+      <div id="locals_${room}" style="display: flex;"></div>
       <div>
         <button id="unpublish" class="btn btn-primary btn-xs btn_between">Unpublish</button>
         <button id="audioset" onclick="configure_bitrate_audio_video('audio');"
@@ -76,26 +93,9 @@ create_room.onclick = () => {
     -- REMOTES -- 
     <br><br>`;
   
-    const firstRoom = document.getElementById('videos');
-    firstRoom.parentNode.appendChild(secondRoom);
-
-    _create({ 
-      room: generateRandomNumber(), 
-      description: newRoomName, 
-      max_publishers : 100, 
-      audiocodec : 'opus', 
-      videocodec : 'vp8', 
-      talking_events : false, 
-      talking_level_threshold : 25, 
-      talking_packets_threshold : 100, 
-      permanent : true, // false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
-      bitrate: 128000,
-      secret: 'adminpwd'
-    });
-  }
-};
-
-function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
+  const firstRoom = document.getElementById('videos');
+  firstRoom.parentNode.appendChild(secondRoom);
+  
   socket.emit('create', {
     data: {
       room,
@@ -188,7 +188,7 @@ const socket = io({
 
 function destroy_room(room, desc) {
     if (confirm(desc + ' room을 삭제하겠습니까?')) {
-      _destroy({ room : room, permanent : true, secret : 'adminpwd' }); // permanent를 true로 설정해서 영구히 삭제 - by Steve
+      _destroy({ room : room, permanent : false, secret : 'adminpwd' }); // permanent를 true로 설정해서 영구히 삭제 - by Steve
     }
 };
 
@@ -486,7 +486,6 @@ function _exists({ room = myRoom } = {}) {
 }
 
 function _listRooms(desc) {
-  console.log('desc in _listRooms >>> ', desc);
   socket.emit('list-rooms', { // socket.on('rooms-list' 이거랑 매칭 되네 ???
     _id: getId(),
     desc,
@@ -884,7 +883,9 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
   console.log('display 111 >> ', display); // 참석할 이름
   console.log('description 111 >> ', description); // $('#new_room_name').val(); >>> 방 이름
   // if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
-  if (room) document.getElementById(description).getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
+  if (room) {
+    document.getElementById(room).getElementsByTagName('span')[0].innerHTML = '--- VIDEOROOM (' + room + ' , ' + description +') ---'; // 로컬 --- LOCALS --- 에서 치환
+  }
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
@@ -906,13 +907,15 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.id = 'video_' + feed;
       localVideoContainer.appendChild(nameElem);
       localVideoContainer.appendChild(localVideoStreamElem);
-      console.log('locals >> ', document.getElementById('locals'));
-      console.log('display 222 >> ', display); // 참석할 이름
-      console.log('room 222 >> ', room); // 16자리 난수 값
-      console.log('description 222 >> ', description); // 이게 잡히지 않고 null로 나옴
-      // console.log('description >> ', document.getElementById(description));
-      document.getElementById(`locals`).appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
-      // document.getElementById(`locals_${description}`).appendChild(localVideoContainer); //
+
+      console.log('display 222 >> ', display); // 나오고
+      console.log('room 222 >> ', room); // 16자리 난수 값 -->> undefined
+      console.log('description 222 >> ', description); // --->> undefined
+      console.log('feed 222 >> ', feed); // 나오고
+      console.log('localStream 222 >> ', localStream); // 나오고
+
+      document.getElementById('locals').appendChild(localVideoContainer); // 여기서 새롭게 들어온 유저들이 계속 locals뒤에 붙는 형식. 다른 방을 만들어 그 방의 locals에 붙이는 형식으로 바꿔야함.
+      // document.getElementById(`locals_${room}`).appendChild(localVideoContainer); //
     }
   } else {
     const localVideoContainer = document.getElementById('video_' + feed);
@@ -922,7 +925,7 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
     }
     const localVideoStreamElem = localVideoContainer.getElementsByTagName('video')[0];
     if (localStream)
-      localVideoStreamElem.srcObject = localStream;
+    localVideoStreamElem.srcObject = localStream;
   }
 }
 

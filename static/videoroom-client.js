@@ -661,14 +661,9 @@ socket.on('rooms-list', ({ data }) => {
   console.log('data in rooms-list >>>>>> ', data); // 서버로 부터 오는 정보.
   $('#room_list').html('');
   data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
-    console.log('rooms >>> ', rooms);
     $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
   });
 
-  // 현재 방 목록의 description
-  data.list.forEach(room => {
-    console.log('room.description >>> ', room.description);
-  })
 });
 
 socket.on('created', ({ data }) => {

@@ -864,8 +864,11 @@ function newRoomJoin(localStream, feed, display, room, description) {
 
 }
 ///////
+const tatalCount = 12;// remotes의 자식 갯수
+const limit = 5
 
 
+///////
 
 function setRemoteVideoElement(remoteStream, feed, display) {
   if (!feed) return;

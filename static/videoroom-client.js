@@ -655,7 +655,28 @@ socket.on('exists', ({ data }) => {
   console.log('room exists', data);
 });
 
+//////////////////
+// const itemsPerPage = 2;
+function renderVideos(rooms) {
+  const participant2 = $(`#remotes`).children().length; // 나 제외한 상대 peer 갯수
+  console.log('participant2 in renderVideos >> ', participant2);
+  const totalScreen = Math.ceil(participant2 / itemsPerPage); // 페이지네이션 갯수
+  console.log('totalScreen >> ', totalScreen); 
 
+
+  if(participant2 > itemsPerPage) {
+    console.log('itemsPerPage보다 peer가 많습니다!')
+    // document.getElementById('pageInfo').innerText = `(${currentPage} / ${totalScreen})`;
+  }
+  
+  // 현재 페이지에 해당하는 비디오만 표시합니다.
+  // const startIndex = (currentPage - 1) * itemsPerPage; // (1-1) *2 = 0, (2-1)*2 = 2
+  // const endIndex = startIndex + itemsPerPage; // 0 + 2 = 2, 2+2 = 4
+  // $(`#remotes_${rooms.room}`).children().hide();
+  // $(`#remotes_${rooms.room}`).children().slice(startIndex, endIndex).show();
+}
+
+//////////////////
 
 socket.on('rooms-list', ({ data }) => {
   // console.log('data >>>>>> ', data); // janus.plugin.videoroom.jcfg 코드 에서 옴.
@@ -664,7 +685,7 @@ socket.on('rooms-list', ({ data }) => {
   $('#room_list').html('');
   data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
     $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
-    renderVideos(rooms);
+    // renderVideos(rooms);
   });
 });
 
@@ -851,26 +872,52 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
 }
 
 
-////// join을 누른순간 새로운 Room에 대한 저옵가 아래로 추가 되고 화면이 띄워져야지.
-function newRoomJoin(localStream, feed, display, room, description) {
-  
-  const firstVideosTag = document.getElementById('videos')
 
-  const localVideoStreamElem = document.createElement('videos');
-  const localVideoFirstLine = document.createElement('span');
-  localVideoFirstLine.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
-  nameElem.style.display = 'table';
-  localVideoStreamElem.appendChild(localVideoFirstLine)
-  firstVideosTag.appendChild(localVideoFirstLine);
-  
 
+// 페이지 번호를 클릭하여 해당 페이지의 데이터 표시
+document.getElementById('js-pagination').addEventListener('click', (event) => {
+  if (event.target.tagName === 'BUTTON') {
+    currentPage = parseInt(event.target.textContent);
+    renderPage(currentPage);
+  }
+});
+
+const itemsPerPage = 2;
+let currentPage = 1; // 현재 페이지 번호
+// 페이지를 렌더링하는 함수
+function renderPage(pageNumber) {
+  
+  const startIndex = (pageNumber - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const remoteContainers = document.querySelectorAll('#remotes > div');
+  const paginationContainer = document.getElementById('js-pagination');
+  
+  
+  // 이전에 렌더링된 페이지네이션을 초기화
+  paginationContainer.innerHTML = '';
+
+  
+  remoteContainers.forEach((container, index) => { 
+    if (index >= startIndex && index < endIndex) {
+      container.style.display = 'block'; // 현재 페이지에 표시할 요소는 보이도록 설정
+    } else {
+      container.style.display = 'none'; // 현재 페이지에 표시하지 않을 요소는 숨김 처리
+    }
+  });
+
+  // 페이지네이션을 생성
+  const totalItems = remoteContainers.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // 클릭해야만 동작됨.
+  for (let i = 1; i <= totalPages; i++) {
+    const pageButton = document.createElement('button');
+    pageButton.textContent = i; // 페이지네이션 숫자 생성코드
+    pageButton.className = 'pagination-button'; // 클래스 추가
+    paginationContainer.appendChild(pageButton);
+  }
 }
-///////
-const tatalCount = 12;// remotes의 자식 갯수
-const limit = 5
 
-
-///////
 
 function setRemoteVideoElement(remoteStream, feed, display) {
   if (!feed) return;
@@ -890,10 +937,48 @@ function setRemoteVideoElement(remoteStream, feed, display) {
 
     const remoteVideoContainer = document.createElement('div');
     remoteVideoContainer.id = 'video_' + feed;
+    remoteVideoContainer.classList.add('remote-container'); // remote-container 클래스 추가
     remoteVideoContainer.appendChild(nameElem);
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
     document.getElementById('remotes').appendChild(remoteVideoContainer);
+     // 이 행위를 해주면 안되고 따로 빼놓은 함수를 실행시켜서 필요한것만 렌더링해야함
+    
+    renderPage(currentPage);
+
+    const remoteContainers = document.querySelectorAll('.remote-container');
+    const paginationContainer = document.getElementById('js-pagination');
+    paginationContainer.innerHTML = '';
+    
+    remoteContainers.forEach((container, index) => {
+      console.log('container >>> ', container);
+    });
+    
+    const totalItems = remoteContainers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    // 페이지 네이션 버튼 생성
+    for (let i = 1; i <= totalPages; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.textContent = i;
+      pageButton.className = 'pagination-button'; // 클래스 추가
+      paginationContainer.appendChild(pageButton);
+
+      // pageButton.addEventListener('click', function() {
+      //   // 모든 페이지 버튼에서 active 클래스 제거
+      //   const allPageButtons = paginationContainer.querySelectorAll('.pagination-button');
+      //   console.log('allPageButtons >>>>>>> ', allPageButtons)
+      //   allPageButtons.forEach(button => {
+      //     button.classList.remove('active');
+      //     console.log('button >> ', button);
+      //   })
+        
+      //   // 현재 클릭된 페이지 버튼에 active 클래스 추가
+      //   // this.classList.add('active');
+      // });
+      
+    }
+
   }
   else {
     const remoteVideoContainer = document.getElementById('video_' + feed);

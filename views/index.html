@@ -18,6 +18,17 @@
       justify-content: space-between;
       margin-right: 10px;
     }
+
+    .pagination-button {
+      background-color: rgb(153, 22, 22);
+      margin: 10px;
+      padding: 10px;
+    }
+
+    .pagination-button.active {
+      background-color: rgb(98, 18, 173);
+      margin: 40px;
+    }
   </style>
 </head>
 
@@ -174,11 +185,9 @@
                       <br><br>
                       <div id="remotes"
                         style="display: flex; justify-content: flex-start; overflow-x: auto; flex-wrap: wrap;"></div>
-                    </div>
-                    <!--------------- 여기까지를 반복해서 create할 때마다 재생성 ------------>
-
-                    <div>
-                      ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+                      <div id="js-pagination" style='display: flex; justify-content: center;'>
+                        <!-- 페이지네이션 컨트롤 위치 -->
+                      </div>
                     </div>
                   </div>
                   <!-- /.card -->

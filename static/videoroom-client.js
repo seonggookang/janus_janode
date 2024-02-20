@@ -922,7 +922,10 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     
     const totalItems = remoteContainers.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
+    ////////////////////////////////
+    // 여기다가 메모하겠습니다. 2.21(수) 다른 사람이 들어와도 clicked class가 그자리에 그대로 있도록 하기.
+    // 위 feat-12 : join다시 못누르게 설정했습니다.
+    ////////////////////////////////
     for (let i = 1; i <= totalPages; i++) {
       const pageButton = document.createElement('button');
       pageButton.textContent = i;

@@ -882,7 +882,7 @@ function renderPage(pageNumber) {
         previouslyClickedButton.classList.remove('clicked');
       }
       
-      this.classList.add('clicked');
+      this.classList.add('clicked');  // 이건 지워줘도 되지 않을까? 위에 i === pageNumber가 있으니까
 
       currentPage = parseInt(this.textContent);
       renderPage(currentPage);
@@ -927,10 +927,19 @@ function setRemoteVideoElement(remoteStream, feed, display) {
       const pageButton = document.createElement('button');
       pageButton.textContent = i;
       pageButton.className = 'pagination-button';
-      if (i === 1) {
-        pageButton.classList.add('clicked');
+      // if (i === 1) { // 첫 렌더링 때 1번 버튼이 빨간색이 되길 원해서 만든거, 근데 다른 peer가 들어올떄마다 1번에 빨간색이 켜지네.
+      //   pageButton.classList.add('clicked');
+      // }
+      // 이중 if문 해야할거같은데 위에 작성한 걸 안의 if문으로.
+      // 내가 바라보고 있는게 우선이고 그 안에서 i === 1이면 빨간색으로?
+      // if(pageButton.contains('clicked')) { // clicked라는 class가 아무것도 없으면 들어와라 ==> 뭐 has 같은거 써서 class 있는지 체크
+      if(!pageButton.getElementsByClassName('clicked')) { // clicked라는 class가 아무것도 없으면 들어와라 ==> 뭐 has 같은거 써서 class 있는지 체크
+        if(i===1) { // 가리키고 있는게 1 이면 시행
+          pageButton.classList.add('clicked');
+        } else { // 아니면 시행
+
+        }
       }
-      
       paginationContainer.appendChild(pageButton); 
     }
   }

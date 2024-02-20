@@ -18,6 +18,24 @@
       justify-content: space-between;
       margin-right: 10px;
     }
+
+    .pagination-button {
+      background-color: rgb(255, 255, 255);
+      margin: 10px;
+      padding: 10px 15px;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 8px;
+    }
+
+    .pagination-button:hover {
+      background-color: rgb(156, 156, 156);
+    }
+
+    .pagination-button.clicked {
+      color: black;
+      background-color: rgb(255, 23, 23);
+    }
   </style>
 </head>
 
@@ -174,6 +192,7 @@
                       <br><br>
                       <div id="remotes"
                         style="display: flex; justify-content: flex-start; overflow-x: auto; flex-wrap: wrap;"></div>
+                      <div id="js-pagination" style='display: flex; justify-content: center;'></div>
                     </div>
                     <!--------------- 여기까지를 반복해서 create할 때마다 재생성 ------------>
 

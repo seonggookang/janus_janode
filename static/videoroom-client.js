@@ -848,24 +848,59 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
   }
 }
 
+document.getElementById('js-pagination').addEventListener('click', (event) => {
+  if (event.target.tagName === 'BUTTON') {
+    currentPage = parseInt(event.target.textContent);
+    renderPage(currentPage);
+  }
+});
 
-////// join을 누른순간 새로운 Room에 대한 저옵가 아래로 추가 되고 화면이 띄워져야지.
-function newRoomJoin(localStream, feed, display, room, description) {
+const itemsPerPage = 2;
+let currentPage = 1;
+
+function renderPage(pageNumber) {
   
-  const firstVideosTag = document.getElementById('videos')
-
-  const localVideoStreamElem = document.createElement('videos');
-  const localVideoFirstLine = document.createElement('span');
-  localVideoFirstLine.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
-  nameElem.style.display = 'table';
-  localVideoStreamElem.appendChild(localVideoFirstLine)
-  firstVideosTag.appendChild(localVideoFirstLine);
+  const startIndex = (pageNumber - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const remoteContainers = document.querySelectorAll('#remotes > div');
+  const paginationContainer = document.getElementById('js-pagination');
   
+  paginationContainer.innerHTML = '';
 
+  remoteContainers.forEach((container, index) => { 
+    if (index >= startIndex && index < endIndex) {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  });
+
+  const totalItems = remoteContainers.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const pageButton = document.createElement('button');
+    pageButton.textContent = i;
+    pageButton.className = 'pagination-button';
+
+    if (i === pageNumber) {
+      pageButton.classList.add('clicked');
+    }
+
+    paginationContainer.appendChild(pageButton);
+    pageButton.addEventListener('click', function() {
+      const previouslyClickedButton = paginationContainer.querySelector('.pagination-button.clicked');
+      if (previouslyClickedButton) {
+        previouslyClickedButton.classList.remove('clicked');
+      }
+      
+      this.classList.add('clicked');
+
+      currentPage = parseInt(this.textContent);
+      renderPage(currentPage);
+    });
+  } 
 }
-///////
-
-
 
 function setRemoteVideoElement(remoteStream, feed, display) {
   if (!feed) return;
@@ -885,10 +920,31 @@ function setRemoteVideoElement(remoteStream, feed, display) {
 
     const remoteVideoContainer = document.createElement('div');
     remoteVideoContainer.id = 'video_' + feed;
+    remoteVideoContainer.classList.add('remote-container');
     remoteVideoContainer.appendChild(nameElem);
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
     document.getElementById('remotes').appendChild(remoteVideoContainer);
+    
+    renderPage(currentPage);
+
+    const remoteContainers = document.querySelectorAll('.remote-container');
+    const paginationContainer = document.getElementById('js-pagination');
+    paginationContainer.innerHTML = '';
+    
+    const totalItems = remoteContainers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    for (let i = 1; i <= totalPages; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.textContent = i;
+      pageButton.className = 'pagination-button';
+      if (i === 1) {
+        pageButton.classList.add('clicked');
+      }
+      
+      paginationContainer.appendChild(pageButton); 
+    }
   }
   else {
     const remoteVideoContainer = document.getElementById('video_' + feed);

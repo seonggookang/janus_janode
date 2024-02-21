@@ -1067,7 +1067,6 @@ socket.on('joined', async ({ data }) => {
     vidTrack.forEach(track => track.enabled = true);
     var vidTrack = localStream.getAudioTracks();
     vidTrack.forEach(track => track.enabled = true);
-
   } catch (e) {
     console.log('error while doing offer', e);
   }
@@ -1470,64 +1469,179 @@ function setLocalVideoElement(localStream, feed, display, room) {
   }
 }
 
+// function setRemoteVideoElement(remoteStream, feed, display) {
+//   if (!feed) return;
+
+//   if (!document.getElementById('video_' + feed)) {
+//     const nameElem = document.createElement('div');
+//     nameElem.style.display = 'table';
+//     nameElem.style.cssText = 'color: #fff; font-size: 0.8rem;';
+
+//     const remoteVideoStreamElem = document.createElement('video');
+//     if (display == 'share') {
+//       console.log(display, display, display);
+//       nameElem.innerHTML = '';
+//       // remoteVideoStreamElem.width = 1224;  //320
+//       // remoteVideoStreamElem.height = 768;  //240
+//       remoteVideoStreamElem.style.cssText = 'width:95%; height: 80%; margin-top: 20px;';
+//     } else {
+//       nameElem.innerHTML = display;
+//       remoteVideoStreamElem.width = 160;
+//       remoteVideoStreamElem.height = 120;
+//     }
+//     remoteVideoStreamElem.autoplay = true;
+//     // remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
+//     if (remoteStream) {
+//       console.log('======== remoteStream ============', feed);
+//       console.log(remoteStream);
+//       remoteVideoStreamElem.srcObject = remoteStream;
+//     }
+
+//     const remoteVideoContainer = document.createElement('div');
+//     remoteVideoContainer.style.cssText = 'padding: 0 5px 0 5px;';
+//     remoteVideoContainer.id = 'video_' + feed;
+//     remoteVideoContainer.appendChild(nameElem);
+//     remoteVideoContainer.appendChild(remoteVideoStreamElem);
+
+//     if (display == 'share') {
+//       document.getElementById('screen').appendChild(remoteVideoContainer);
+//     } else {
+//       document.getElementById('remotes').appendChild(remoteVideoContainer);
+//     }
+//   }
+//   else {
+//     const remoteVideoContainer = document.getElementById('video_' + feed);
+//     if (display) {
+//       const nameElem = remoteVideoContainer.getElementsByTagName('div')[0];
+//       if (display == 'share') {
+//         nameElem.innerHTML = '';
+//       } else {
+//         nameElem.innerHTML = display;
+//       }
+//     }
+//     if (remoteStream) {
+//       console.log('======== remoteStream ============', feed);
+//       console.log(remoteStream);
+//       const remoteVideoStreamElem = remoteVideoContainer.getElementsByTagName('video')[0];
+//       remoteVideoStreamElem.srcObject = remoteStream;
+//     }
+//   }
+// }
+
+// 새로운 파일 추가되는 부분
+document.getElementById('js-pagination').addEventListener('click', (event) => {
+  if (event.target.tagName === 'BUTTON') {
+    currentPage = parseInt(event.target.textContent);
+    renderPage(currentPage);
+  }
+});
+
+const itemsPerPage = 2;
+let currentPage = 1;
+
+function renderPage(pageNumber) {
+  
+  const startIndex = (pageNumber - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const remoteContainers = document.querySelectorAll('#remotes > div');
+  const paginationContainer = document.getElementById('js-pagination');
+  
+  paginationContainer.innerHTML = '';
+
+  remoteContainers.forEach((container, index) => { 
+    if (index >= startIndex && index < endIndex) {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  });
+
+  const totalItems = remoteContainers.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const pageButton = document.createElement('button');
+    pageButton.textContent = i;
+    pageButton.className = 'pagination-button';
+
+    if (i === pageNumber) {
+      pageButton.classList.add('clicked');
+    }
+
+    paginationContainer.appendChild(pageButton);
+    pageButton.addEventListener('click', function() {
+      const previouslyClickedButton = paginationContainer.querySelector('.pagination-button.clicked');
+      if (previouslyClickedButton) {
+        previouslyClickedButton.classList.remove('clicked');
+      }
+      
+      this.classList.add('clicked');
+
+      currentPage = parseInt(this.textContent);
+      renderPage(currentPage);
+    });
+  } 
+}
+
 function setRemoteVideoElement(remoteStream, feed, display) {
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
-    const nameElem = document.createElement('div');
+    const nameElem = document.createElement('span');
+    nameElem.innerHTML = display + ' (' + feed + ')';
     nameElem.style.display = 'table';
-    nameElem.style.cssText = 'color: #fff; font-size: 0.8rem;';
 
     const remoteVideoStreamElem = document.createElement('video');
-    if (display == 'share') {
-      console.log(display, display, display);
-      nameElem.innerHTML = '';
-      // remoteVideoStreamElem.width = 1224;  //320
-      // remoteVideoStreamElem.height = 768;  //240
-      remoteVideoStreamElem.style.cssText = 'width:95%; height: 80%; margin-top: 20px;';
-    } else {
-      nameElem.innerHTML = display;
-      remoteVideoStreamElem.width = 160;
-      remoteVideoStreamElem.height = 120;
-    }
+    remoteVideoStreamElem.width = 160;
+    remoteVideoStreamElem.height = 120;
     remoteVideoStreamElem.autoplay = true;
-    // remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
-    if (remoteStream) {
-      console.log('======== remoteStream ============', feed);
-      console.log(remoteStream);
+    remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
+    if (remoteStream)
       remoteVideoStreamElem.srcObject = remoteStream;
-    }
 
     const remoteVideoContainer = document.createElement('div');
-    remoteVideoContainer.style.cssText = 'padding: 0 5px 0 5px;';
     remoteVideoContainer.id = 'video_' + feed;
+    remoteVideoContainer.classList.add('remote-container');
     remoteVideoContainer.appendChild(nameElem);
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
-    if (display == 'share') {
-      document.getElementById('screen').appendChild(remoteVideoContainer);
-    } else {
-      document.getElementById('remotes').appendChild(remoteVideoContainer);
+    document.getElementById('remotes').appendChild(remoteVideoContainer);
+
+    renderPage(currentPage);
+
+    const remoteContainers = document.querySelectorAll('.remote-container');
+    const paginationContainer = document.getElementById('js-pagination');
+    paginationContainer.innerHTML = '';
+    
+    const totalItems = remoteContainers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    for (let i = 1; i <= totalPages; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.textContent = i;
+      pageButton.className = 'pagination-button';
+      
+      if(i === currentPage) {
+        pageButton.classList.add('clicked');
+      } 
+      
+      paginationContainer.appendChild(pageButton); 
     }
   }
   else {
     const remoteVideoContainer = document.getElementById('video_' + feed);
     if (display) {
-      const nameElem = remoteVideoContainer.getElementsByTagName('div')[0];
-      if (display == 'share') {
-        nameElem.innerHTML = '';
-      } else {
-        nameElem.innerHTML = display;
-      }
+      const nameElem = remoteVideoContainer.getElementsByTagName('span')[0];
+      nameElem.innerHTML = display + ' (' + feed + ')';
     }
     if (remoteStream) {
-      console.log('======== remoteStream ============', feed);
-      console.log(remoteStream);
       const remoteVideoStreamElem = remoteVideoContainer.getElementsByTagName('video')[0];
       remoteVideoStreamElem.srcObject = remoteStream;
     }
   }
 }
+
+// 수정 끝
 
 function removeVideoElementByFeed(feed, stopTracks = true) {
   const videoContainer = document.getElementById(`video_${feed}`);

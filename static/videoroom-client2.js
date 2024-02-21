@@ -7,7 +7,7 @@ const RTCPeerConnection = (window.RTCPeerConnection || window.webkitRTCPeerConne
 
 const pcMap = new Map();
 let pendingOfferMap = new Map();
-var myRoom = getURLParameter('room') ? parseInt(getURLParameter('room')) : (getURLParameter('room_str') || 12345555555);
+var myRoom = getURLParameter('room') ? parseInt(getURLParameter('room')) : (getURLParameter('room_str') || 1234);
 const randName = ('John_Doe_' + Math.floor(10000 * Math.random()));
 const myName = getURLParameter('name') || randName;
 
@@ -22,7 +22,6 @@ connect.onclick = () => {
     socket.connect();
   }
 };
-
 disconnect.onclick = () => {
   if (!socket.connected) {
     alert('already disconnected!');
@@ -31,7 +30,6 @@ disconnect.onclick = () => {
     socket.disconnect();
   }
 };
-
 create_room.onclick = () => {
   if ($('#new_room_name').val() == '') alert('생성할 방이름을 입력해야 합니다.');
   else _create({ 
@@ -43,31 +41,10 @@ create_room.onclick = () => {
     talking_events : false, 
     talking_level_threshold : 25, 
     talking_packets_threshold : 100, 
-    permanent : true, // false -> true로 바꾸니 서버에 아예 영구히 들어감 - by steve
+    permanent : false,
     bitrate: 128000,
-    secret: 'adminpwd'
-  });
+    secret: 'adminpwd' });
 };
-
-function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
-  socket.emit('create', {
-    data: {
-      room,
-      description,
-      max_publishers,
-      audiocodec,
-      videocodec,
-      talking_events,
-      talking_level_threshold,
-      talking_packets_threshold,
-      permanent,
-      bitrate,
-      secret: 'adminpwd',
-    },
-    _id: getId(),
-  });
-}
-
 list_rooms.onclick = () => {
   _listRooms();
 };
@@ -113,7 +90,7 @@ const scheduleConnection = (function () {
 })();
 
 const scheduleConnection2 = (function (room) {
-  console.log('room==='+room); // 이것만 계속 나오네
+  console.log('room==='+room);
   let task = null;
   const delay = 5000;
 
@@ -129,8 +106,7 @@ const scheduleConnection2 = (function (room) {
   });
 })();
 
-// const socket = io('https://192.168.50.156:4443/'); // localhost (Peter 주소)
-// const socket = io("https://localhost:4443"); // 내 주소
+// const socket = io("http://0.0.0.0:4443/janode");
 const socket = io({
   rejectUnauthorized: false,
   autoConnect: false,
@@ -139,35 +115,21 @@ const socket = io({
 
 function destroy_room(room, desc) {
     if (confirm(desc + ' room을 삭제하겠습니까?')) {
-      _destroy({ room : room, permanent : true, secret : 'adminpwd' }); // permanent를 true로 설정해서 영구히 삭제 - by Steve
+      _destroy({ room : room, permanent : false, secret : 'adminpwd' });
     }
 };
-
+  
 function join22(room, desc) {
   var display_name = $('#display_name').val();
   if (display_name == '') {
     alert('참석할 이름을 입력해야 합니다.');
     return;
   }
-  
-  let videosElement = document.getElementById('videos');
-  setTimeout(() => {
-    let firstSpan = videosElement.querySelector('span');
-    setTimeout(() => {
-      let innerHTML = firstSpan.innerHTML;
-      let match = innerHTML.match(/\((\d+)\s*,/);
-      if (match) {
-        let extractedNumber = +match[1];
-        if ( extractedNumber === room ) {
-          alert(`Already exist. You can't join`);
-        } else {
-          join({room: room, display:display_name, token:null});
-        }
-      } else { // -- LOCALS -- 일 때 실행되는거 >> 최초 1회 시행.
-        join({room: room, display:display_name, token:null});
-      }
-    }, 5);
-  }, 0);
+  join({room: room, display:display_name, token:null});
+  // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
+  //   join({room: room, display:display_name, token:null});
+  // }
+
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
@@ -179,7 +141,7 @@ function join({ room = myRoom, display = myName, token = null }) {
   };
 
   socket.emit('join', {
-    data: joinData, // 이 data에서 display가 이미 해당 방에 포함되어 있다면 막아라 로직 너헝야함.
+    data: joinData,
     _id: getId(),
   });
 }
@@ -246,8 +208,6 @@ function configure_bitrate_audio_video(mode) {
       feed,
       bitrate: '12800',
     };
-    // var bitrate_label = ((bitrate / 1000) > 1000) ? (bitrate / 1000 / 1000) + 'M' : (bitrate / 1000) + 'K';
-    // $('#Bandwidth_label').text(bitrate_label);
     socket.emit('configure', {
       data: configureData,
       _id: getId(),
@@ -257,36 +217,27 @@ function configure_bitrate_audio_video(mode) {
   } else if (mode =='audio') {
     if ($('#audioset').hasClass('btn-primary')) {
       $('#audioset').removeClass('btn-primary').addClass('btn-warning');
-      console.log('오디오 켜기');
       var audioset = false;
       var vidTrack = localStream.getAudioTracks();
       vidTrack.forEach(track => track.enabled = false);      
     } else {
       $('#audioset').removeClass('btn-warning').addClass('btn-primary');
-      console.log('오디오 끄기');
       var audioset = true;
       var vidTrack = localStream.getAudioTracks();
       vidTrack.forEach(track => track.enabled = true);      
     }
   } else {
-    // 비디오를 끄는 것이면
     if ($('#videoset').hasClass('btn-primary')) {
       $('#videoset').removeClass('btn-primary').addClass('btn-warning');
-
-      console.log('비디오 끄기');
-      // var videoset = false;
+      var videoset = false;
       var vidTrack = localStream.getVideoTracks();
       vidTrack.forEach(track => track.enabled = false);      
 
     } else {
       $('#videoset').removeClass('btn-warning').addClass('btn-primary');
-      
-      console.log('비디오 켜기');
-      // var videoset = true;
+      var videoset = true;
       var vidTrack = localStream.getVideoTracks();
       vidTrack.forEach(track => track.enabled = true);      
-
-      
     }
   }
 
@@ -400,14 +351,30 @@ function _exists({ room = myRoom } = {}) {
   });
 }
 
-function _listRooms(desc) {
-  socket.emit('list-rooms', { // socket.on('rooms-list' 이거랑 매칭 되네 ???
+function _listRooms() {
+  socket.emit('list-rooms', {
     _id: getId(),
-    desc,
   });
 }
 
-
+function _create({ room, description, max_publishers = 6, audiocodec = 'opus', videocodec = 'vp8', talking_events = false, talking_level_threshold = 25, talking_packets_threshold = 100, permanent = false, bitrate = 128000 }) {
+  socket.emit('create', {
+    data: {
+      room,
+      description,
+      max_publishers,
+      audiocodec,
+      videocodec,
+      talking_events,
+      talking_level_threshold,
+      talking_packets_threshold,
+      permanent,
+      bitrate,
+      secret: 'adminpwd',
+    },
+    _id: getId(),
+  });
+}
 
 function _destroy({ room = myRoom, permanent = false, secret = 'adminpwd' }) {
   socket.emit('destroy', {
@@ -526,24 +493,23 @@ socket.on('videoroom-error', ({ error, _id }) => {
 });
 
 socket.on('joined', async ({ data }) => {
-  console.log(`data in socket.on('joined') >>> `, data);
-  console.log('data.display >>> ', data.display); // TEST_50986
-  console.log('data.description >>> ', data.description); // 222
-  // 여기다가 if() 로 해야하나? data.description === 
+  console.log('joined to room', data);
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
   $('#curr_room_name').val(data.description);
   $('#leave_all').prop('disabled', false);
-  _listRooms(); 
-  setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
+  _listRooms();
+  
+  setLocalVideoElement(null, null, null, data.room);
+
   try {
     const offer = await doOffer(data.feed, data.display, false);
     configure({ feed: data.feed, jsep: offer });
     subscribeTo(data.publishers, data.room);
     var vidTrack = localStream.getVideoTracks();
-    vidTrack.forEach(track => track.enabled = true); // 이게 false로 돼있어서 join시, 항상 꺼진 화면으로 시작됐음.
+    vidTrack.forEach(track => track.enabled = false);      
     var vidTrack = localStream.getAudioTracks();
-    vidTrack.forEach(track => track.enabled = true);
+    vidTrack.forEach(track => track.enabled = false);      
 
   } catch (e) {
     console.log('error while doing offer', e);
@@ -644,14 +610,12 @@ socket.on('exists', ({ data }) => {
 });
 
 socket.on('rooms-list', ({ data }) => {
-  // console.log('data >>>>>> ', data); // janus.plugin.videoroom.jcfg 코드 에서 옴.
-  // var parsedData = JSON.parse(data);
-  console.log('data in rooms-list >>>>>> ', data); // 서버로 부터 오는 정보.
+  console.log('rooms list', data);
   $('#room_list').html('');
-  data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
-    $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
+  data.list.forEach(rooms => {
+    $('#room_list').html($('#room_list').html()+"<br>"+rooms.description+"("+rooms.num_participants+"/"+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
+    
   });
-
 });
 
 socket.on('created', ({ data }) => {
@@ -798,13 +762,13 @@ async function doAnswer(feed, display, offer) {
   }
 }
 
-function setLocalVideoElement(localStream, feed, display, room, description) {
-  if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '   --- VIDEOROOM (' + room + ' , ' + description +') ---  '; // 로컬 --- LOCALS --- 에서 치환
+function setLocalVideoElement(localStream, feed, display, room) {
+  if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '   --- VIDEOROOM (' + room + ') ---  ';
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
     const nameElem = document.createElement('span');
-    nameElem.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
+    nameElem.innerHTML = display + ' (' + feed + ')';
     nameElem.style.display = 'table';
 
     if (localStream) {
@@ -824,72 +788,17 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
 
       document.getElementById('locals').appendChild(localVideoContainer);
     }
-  } else {
+  }
+  else {
     const localVideoContainer = document.getElementById('video_' + feed);
     if (display) {
-      const nameElem = localVideoContainer.getElementsByTagName('span')[0]; // 이게 뭐지??
+      const nameElem = localVideoContainer.getElementsByTagName('span')[0];
       nameElem.innerHTML = display + ' (' + feed + ')';
     }
     const localVideoStreamElem = localVideoContainer.getElementsByTagName('video')[0];
     if (localStream)
       localVideoStreamElem.srcObject = localStream;
   }
-}
-
-document.getElementById('js-pagination').addEventListener('click', (event) => {
-  if (event.target.tagName === 'BUTTON') {
-    currentPage = parseInt(event.target.textContent);
-    renderPage(currentPage);
-  }
-});
-
-const itemsPerPage = 2;
-let currentPage = 1;
-
-function renderPage(pageNumber) {
-  
-  const startIndex = (pageNumber - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const remoteContainers = document.querySelectorAll('#remotes > div');
-  const paginationContainer = document.getElementById('js-pagination');
-  
-  paginationContainer.innerHTML = '';
-
-  remoteContainers.forEach((container, index) => { 
-    if (index >= startIndex && index < endIndex) {
-      container.style.display = 'block';
-      // 여기서 연결해주는 행위를 하고
-    } else {
-      container.style.display = 'none';
-      // 여기서 끊어주는 행위를 하면 되지 않을까? feedliving이나 뭐 그런거.
-    }
-  });
-
-  const totalItems = remoteContainers.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const pageButton = document.createElement('button');
-    pageButton.textContent = i;
-    pageButton.className = 'pagination-button';
-
-    if (i === pageNumber) {
-      pageButton.classList.add('clicked');
-    }
-
-    paginationContainer.appendChild(pageButton);
-    pageButton.addEventListener('click', function() {
-      const previouslyClickedButton = paginationContainer.querySelector('.pagination-button.clicked');
-      if (previouslyClickedButton) {
-        previouslyClickedButton.classList.remove('clicked');
-      }
-      
-      this.classList.add('clicked');  // 이건 지워줘도 되지 않을까? 위에 i === pageNumber가 있으니까
-
-      currentPage = parseInt(this.textContent);
-      renderPage(currentPage);
-    });
-  } 
 }
 
 function setRemoteVideoElement(remoteStream, feed, display) {
@@ -910,33 +819,10 @@ function setRemoteVideoElement(remoteStream, feed, display) {
 
     const remoteVideoContainer = document.createElement('div');
     remoteVideoContainer.id = 'video_' + feed;
-    remoteVideoContainer.classList.add('remote-container');
     remoteVideoContainer.appendChild(nameElem);
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
     document.getElementById('remotes').appendChild(remoteVideoContainer);
-
-    renderPage(currentPage);
-
-    const remoteContainers = document.querySelectorAll('.remote-container');
-    const paginationContainer = document.getElementById('js-pagination');
-    paginationContainer.innerHTML = '';
-    
-    const totalItems = remoteContainers.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
-    for (let i = 1; i <= totalPages; i++) {
-      const pageButton = document.createElement('button');
-      pageButton.textContent = i;
-      pageButton.className = 'pagination-button';
-      
-      if(i === currentPage) {
-        pageButton.classList.add('clicked');
-        console.log('여기 1')
-      } 
-      
-      paginationContainer.appendChild(pageButton); 
-    }
   }
   else {
     const remoteVideoContainer = document.getElementById('video_' + feed);
@@ -957,8 +843,7 @@ function removeVideoElementByFeed(feed, stopTracks = true) {
 }
 
 function removeVideoElement(container, stopTracks = true) {
-  // let videoStreamElem = container.getElementsByTagName('video').length > 0 ? container.getElementsByTagName('video')[0] : null;
-  let videoStreamElem = container.getElementsByTagName('video') && container.getElementsByTagName('video')[0];
+  let videoStreamElem = container.getElementsByTagName('video').length > 0 ? container.getElementsByTagName('video')[0] : null;
   if (videoStreamElem && videoStreamElem.srcObject && stopTracks) {
     videoStreamElem.srcObject.getTracks().forEach(track => track.stop());
     videoStreamElem.srcObject = null;

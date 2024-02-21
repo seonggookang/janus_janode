@@ -71,7 +71,7 @@ async function initBackEnd() {
     connection.once(Janode.EVENT.CONNECTION_ERROR, error => {
       Logger.error(`${LOG_NS} connection with Janus error: ${error.message}`);
 
-      replyError(io, 'backend-failure123');
+      replyError(io, 'backend-failure');
 
       scheduleBackEndConnection();
     });
@@ -99,7 +99,7 @@ async function initBackEnd() {
     if (connection) connection.close().catch(() => { });
 
     // notify clients
-    replyError(io, 'backend-failure456'); // 이게 잡히고 있네
+    replyError(io, 'backend-failure'); // 이게 잡히고 있네
 
     throw error;
   }

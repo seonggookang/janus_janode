@@ -86,6 +86,17 @@ leave_all.onclick = () => {
   else _leaveAll({feed: $('#local_feed').text()});
 };
 
+unpublish.onclick = () => {
+  if ($('#unpublish').text() == 'Unpublish') {
+    console.log('local_feed >>> ', local_feed);
+    if (local_feed) {
+      _unpublish({feed : local_feed});
+    }
+  } else {
+    publishOwnFeed();
+  }
+};
+
 function getId() {
   return Math.floor(Number.MAX_SAFE_INTEGER * Math.random());
 }
@@ -526,10 +537,6 @@ socket.on('videoroom-error', ({ error, _id }) => {
 });
 
 socket.on('joined', async ({ data }) => {
-  console.log(`data in socket.on('joined') >>> `, data);
-  console.log('data.display >>> ', data.display); // TEST_50986
-  console.log('data.description >>> ', data.description); // 222
-  // 여기다가 if() 로 해야하나? data.description === 
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
   $('#curr_room_name').val(data.description);

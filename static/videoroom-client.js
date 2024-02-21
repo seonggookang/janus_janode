@@ -913,8 +913,7 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
     document.getElementById('remotes').appendChild(remoteVideoContainer);
-    // 상대 peer가 들어왔을 떄 currentPage가 뭐로 돼있는지 확인.
-    console.log('currentPage >>> ', currentPage);
+
     renderPage(currentPage);
 
     const remoteContainers = document.querySelectorAll('.remote-container');
@@ -923,21 +922,17 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     
     const totalItems = remoteContainers.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    ////////////////////////////////
-    // 여기다가 메모하겠습니다. 2.21(수) 다른 사람이 들어와도 clicked class가 그자리에 그대로 있도록 하기.
-    // 위 feat-12 : join다시 못누르게 설정했습니다.
-    ////////////////////////////////
+    
     for (let i = 1; i <= totalPages; i++) {
       const pageButton = document.createElement('button');
       pageButton.textContent = i;
       pageButton.className = 'pagination-button';
       
-      // if (!pageButton.classList.contains('clicked')) { // clicked라는 class가 아무것도 없으면 들어와라 ==> 뭐 has 같은거 써서 class 있는지 체크
-        if(i === currentPage ) { // 가리키고 있는게 1 이면 시행
-          pageButton.classList.add('clicked');
-          console.log('여기 1')
-        } 
-      // }
+      if(i === currentPage) {
+        pageButton.classList.add('clicked');
+        console.log('여기 1')
+      } 
+      
       paginationContainer.appendChild(pageButton); 
     }
   }

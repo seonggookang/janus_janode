@@ -162,13 +162,19 @@ function join22(room, desc) {
   }
   
   let videosElement = document.getElementById('videos');
+  console.log('videosElement >>> ', videosElement);
   setTimeout(() => {
     let firstSpan = videosElement.querySelector('span');
+    console.log('firstSpan >>> ', firstSpan);
+    
     setTimeout(() => {
       let innerHTML = firstSpan.innerHTML;
+      console.log('innerHTML >>> ', innerHTML);
       let match = innerHTML.match(/\((\d+)\s*,/);
+      console.log('match >>> ', match);
       if (match) {
         let extractedNumber = +match[1];
+        console.log('extractedNumber >>> ', extractedNumber);
         if ( extractedNumber === room ) {
           alert(`Already exist. You can't join`);
         } else {
@@ -301,6 +307,22 @@ function configure_bitrate_audio_video(mode) {
     }
   }
 
+}
+
+async function publishOwnFeed() {
+  try {
+    const offer = await doOffer(local_feed, local_display, false);
+    configure({ feed: local_feed, jsep: offer, just_configure: false });
+    // subscribeTo(data.publishers, data.room);
+    // var vidTrack = localStream.getVideoTracks();
+    // vidTrack.forEach(track => track.enabled = true);
+    // var vidTrack = localStream.getAudioTracks();
+    // vidTrack.forEach(track => track.enabled = true);
+
+    $('#unpublish').text('Unpublish');
+  } catch (e) {
+    console.log('error while doing offer in publishOwnFeed()', e);
+  }
 }
 
 function _unpublish({ feed }) {

@@ -602,6 +602,10 @@ function initFrontEnd() {
   app.get('/', function(req, res) {
     res.render('index.html', {title: 'AAAAA'});
   });
+  
+  app.get('/multi', function(req, res) {
+    res.render('multi.html', {title: 'AAAAA'});
+  });
 
   app.get('/audio', function(req, res) {
     res.render('audio_only.html', {title: 'AAAAA'});

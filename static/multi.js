@@ -1212,13 +1212,13 @@ socket.on('exists', ({ data }) => {
 });
 
 socket.on('rooms-list', ({ data }) => {
+  console.log('data.list >>> ', data.list[0].num_participants);
   // var parsedData = JSON.parse(data);
   // console.log('rooms list',  parsedData);
   // console.log(typeof parsedData);
   $('#room_list').html('');
   data.list.forEach(rooms => {
     $('#room_list').html($('#room_list').html()+"<br><span class='room' room='"+rooms.room+"'>"+rooms.description+"</span>("+rooms.num_participants+"/"+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' room='"+rooms.room+"' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
-    
   });
 });
 
@@ -1588,8 +1588,11 @@ function setRemoteVideoElement(remoteStream, feed, display) {
 
   if (!document.getElementById('video_' + feed)) {
     const nameElem = document.createElement('span');
-    nameElem.innerHTML = display + ' (' + feed + ')';
+    // nameElem.innerHTML = display + ' (' + feed + ')';
+    nameElem.innerHTML = display
     nameElem.style.display = 'table';
+    
+    
 
     const remoteVideoStreamElem = document.createElement('video');
     remoteVideoStreamElem.width = 160;
@@ -1601,6 +1604,7 @@ function setRemoteVideoElement(remoteStream, feed, display) {
 
     const remoteVideoContainer = document.createElement('div');
     remoteVideoContainer.id = 'video_' + feed;
+    remoteVideoContainer.style.marginRight = '10px';
     remoteVideoContainer.classList.add('remote-container');
     remoteVideoContainer.appendChild(nameElem);
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
@@ -1632,7 +1636,8 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     const remoteVideoContainer = document.getElementById('video_' + feed);
     if (display) {
       const nameElem = remoteVideoContainer.getElementsByTagName('span')[0];
-      nameElem.innerHTML = display + ' (' + feed + ')';
+      nameElem.innerHTML = display;
+      // nameElem.innerHTML = display + ' (' + feed + ')';
     }
     if (remoteStream) {
       const remoteVideoStreamElem = remoteVideoContainer.getElementsByTagName('video')[0];

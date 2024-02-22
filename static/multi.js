@@ -1019,11 +1019,9 @@ socket.on('connect', () => {
 
     if (hasRoomsListBeenHandled) return;
 
-    console.log('data.list >>> ', data.list[0].num_participants);    
-    console.log('data >>>>>>>>>>>>>>>>>>>>>>>>>> ', data.list[0].num_participants);
     let totalParticipants = data.list[0].num_participants
     
-    if(totalParticipants < 5) { 
+    if (totalParticipants < 5) { 
       join({room: 1234, display:$('#myInput').val(), token:null})
     } else {
       alert('You can not join!!! Too many participants');

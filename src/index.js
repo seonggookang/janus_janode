@@ -114,6 +114,11 @@ function initFrontEnd() {
     const remote = `[${socket.request.connection.remoteAddress}:${socket.request.connection.remotePort}]`;
     Logger.info(`${LOG_NS} ${remote} connection with client established`);
 
+    
+    const response = janodeManagerHandle.list(); // 이것을 'connect'에도 보내면 될텐데.
+    console.log(`response >>>>>>>>>>> ${response}`)
+    // replyEvent(socket, 'rooms-list', response, _id);
+
     const clientHandles = (function () {
       let handles = [];
 
@@ -475,6 +480,7 @@ function initFrontEnd() {
       }
     });
 
+    // 이 부분을 socket.o('connect') 에서도 이용할 수 있게.
     socket.on('list-rooms', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} list-rooms received`);
       const { _id, data: listdata = {} } = evtdata;
@@ -482,7 +488,7 @@ function initFrontEnd() {
       if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
 
       try {
-        const response = await janodeManagerHandle.list();
+        const response = await janodeManagerHandle.list(); // 이것을 'connect'에도 보내면 될텐데.
         replyEvent(socket, 'rooms-list', response, _id);
         Logger.info(`${LOG_NS} ${remote} rooms-list sent`);
       } catch ({ message }) {
@@ -494,7 +500,7 @@ function initFrontEnd() {
     socket.on('create', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} create received`);
       const { _id, data: createdata = {} } = evtdata;
-      console.log('evtdata >> ', evtdata);
+      
 
       if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
 
@@ -650,7 +656,7 @@ function replyEvent(socket, evtname, data, _id) {
     data,
   };
   if (_id) evtdata._id = _id;
-  console.log('evtdata >> ', evtdata.data.list) // vscode 터미널에서 나옴.
+  
   socket.emit(evtname, evtdata);
 }
 

@@ -154,39 +154,51 @@ function destroy_room(room, desc) {
     }
 };
 
-function join22(room, desc, participant) {
-  console.log('participant >>> ', participant);
+// function join22(room, desc, participant) {
+//   console.log('participant >>> ', participant);
+//   var display_name = $('#display_name').val();
+//   if (display_name == '') {
+//     alert('참석할 이름을 입력해야 합니다.');
+//     return;
+//   }
+//   console.log('room >>> ', room);
+  
+//   let videosElement = document.getElementById('videos');
+//   console.log('videosElement >>> ', videosElement);
+//   setTimeout(() => {
+//     let firstSpan = videosElement.querySelector('span');
+//     console.log('firstSpan >>> ', firstSpan);
+    
+//     setTimeout(() => {
+//       let innerHTML = firstSpan.innerHTML;
+//       console.log('innerHTML >>> ', innerHTML);
+//       let match = innerHTML.match(/\((\d+)\s*,/);
+//       console.log('match >>> ', match);
+//       if (match) {
+//         let extractedNumber = +match[1];
+//         console.log('extractedNumber >>> ', extractedNumber);
+//         if ( extractedNumber === room ) {
+//           alert(`Already exist. You can't join`);
+//         } else {
+//           join({room: room, display:display_name, token:null});
+//         }
+//       } else { // -- LOCALS -- 일 때 실행되는거 >> 최초 1회 시행.
+//         join({room: room, display:display_name, token:null});
+//       }
+//     }, 5);
+//   }, 0);
+// }
+function join22(room, desc, totalParticipants) {
   var display_name = $('#display_name').val();
   if (display_name == '') {
     alert('참석할 이름을 입력해야 합니다.');
     return;
   }
-  console.log('room >>> ', room);
-  
-  let videosElement = document.getElementById('videos');
-  console.log('videosElement >>> ', videosElement);
-  setTimeout(() => {
-    let firstSpan = videosElement.querySelector('span');
-    console.log('firstSpan >>> ', firstSpan);
-    
-    setTimeout(() => {
-      let innerHTML = firstSpan.innerHTML;
-      console.log('innerHTML >>> ', innerHTML);
-      let match = innerHTML.match(/\((\d+)\s*,/);
-      console.log('match >>> ', match);
-      if (match) {
-        let extractedNumber = +match[1];
-        console.log('extractedNumber >>> ', extractedNumber);
-        if ( extractedNumber === room ) {
-          alert(`Already exist. You can't join`);
-        } else {
-          join({room: room, display:display_name, token:null});
-        }
-      } else { // -- LOCALS -- 일 때 실행되는거 >> 최초 1회 시행.
-        join({room: room, display:display_name, token:null});
-      }
-    }, 5);
-  }, 0);
+  if (totalParticipants < 5) { // 로컬 포함 5명이면 더 이상 못들어옴
+    join({room: room, display:display_name, token:null});
+  } else {
+    alert('you can not join!!! Too many participants');
+  }
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
@@ -683,7 +695,6 @@ socket.on('rooms-list', ({ data }) => {
     // $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
     $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description + "\", "+rooms.num_participants+");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
   });
-
 });
 
 socket.on('created', ({ data }) => {
@@ -884,7 +895,6 @@ function renderPage(pageNumber) {
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
   const paginationContainer = document.getElementById('js-pagination');
-  
   paginationContainer.innerHTML = '';
 
   remoteContainers.forEach((container, index) => { 

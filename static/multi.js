@@ -144,19 +144,27 @@ function destroy_room(room, desc) {
     }
 };
   
+// function join22(room, desc) {
+//   var display_name = $('#display_name').val();
+
+//   // var display_name = $('#myInput').val();
+//   // if (display_name == '') {
+//   //   alert('참석할 이름을 입력해야 합니다.');
+//   //   return;
+//   // }
+//   join({room: room, display:display_name, token:null});
+//   // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
+//   //   join({room: room, display:display_name, token:null});
+//   // }
+
+// }
 function join22(room, desc) {
   var display_name = $('#display_name').val();
-
-  // var display_name = $('#myInput').val();
-  // if (display_name == '') {
-  //   alert('참석할 이름을 입력해야 합니다.');
-  //   return;
-  // }
+  if (display_name == '') {
+    alert('참석할 이름을 입력해야 합니다.');
+    return;
+  }
   join({room: room, display:display_name, token:null});
-  // if (confirm('Room ['+ desc+'] 에 [' + display_name+ '] 이름으로 조인하겠습니까?')) {
-  //   join({room: room, display:display_name, token:null});
-  // }
-
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
@@ -991,6 +999,9 @@ function _listForward({ room = myRoom, secret = 'adminpwd' }) {
   });
 }
 
+// 여기에서 사용할 변수 선언.
+let hasRoomsListBeenHandled = false;
+
 socket.on('connect', () => {
   console.log('socket connected');
   $('#connect_status').val('connected');
@@ -1003,7 +1014,24 @@ socket.on('connect', () => {
   // join({room: 1264989511454137, display:display_name, token:null});
   
   //scheduleConnection(0.1);
-  join({room: 1234, display:$('#myInput').val(), token:null})
+  // 이 밑의 함수가 딱 1회만 실행 하고싶다.
+  socket.on('rooms-list', ({ data }) => {
+
+    if (hasRoomsListBeenHandled) return;
+
+    console.log('data.list >>> ', data.list[0].num_participants);    
+    console.log('data >>>>>>>>>>>>>>>>>>>>>>>>>> ', data.list[0].num_participants);
+    let totalParticipants = data.list[0].num_participants
+    
+    if(totalParticipants < 5) { 
+      join({room: 1234, display:$('#myInput').val(), token:null})
+    } else {
+      alert('You can not join!!! Too many participants');
+    }
+
+    // 이벤트 핸들러가 실행되었음을 표시
+    hasRoomsListBeenHandled = true;
+  });
 });
 
 socket.on('disconnect', () => {
@@ -1212,10 +1240,8 @@ socket.on('exists', ({ data }) => {
 });
 
 socket.on('rooms-list', ({ data }) => {
-  console.log('data.list >>> ', data.list[0].num_participants);
   // var parsedData = JSON.parse(data);
   // console.log('rooms list',  parsedData);
-  // console.log(typeof parsedData);
   $('#room_list').html('');
   data.list.forEach(rooms => {
     $('#room_list').html($('#room_list').html()+"<br><span class='room' room='"+rooms.room+"'>"+rooms.description+"</span>("+rooms.num_participants+"/"+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' room='"+rooms.room+"' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
@@ -1417,9 +1443,6 @@ function setLocalVideoElement(localStream, feed, display, room) {
       const localBlankPersonElem = document.createElement('img');
       localBlankPersonElem.classList.add("localBlankPerson");
 
-      
-
-
       const localVideoStreamElem = document.createElement('video');
       //localVideo.id = 'video_'+feed;
       localVideoStreamElem.width = 160;
@@ -1543,11 +1566,10 @@ function renderPage(pageNumber) {
   
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const remoteContainers = document.querySelectorAll('#remotes > div');
+  const remoteContainers = document.querySelectorAll('#remotesMulti > div');
   const paginationContainer = document.getElementById('js-pagination');
-  
   paginationContainer.innerHTML = '';
-
+  
   remoteContainers.forEach((container, index) => { 
     if (index >= startIndex && index < endIndex) {
       container.style.display = 'block';
@@ -1591,8 +1613,6 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     // nameElem.innerHTML = display + ' (' + feed + ')';
     nameElem.innerHTML = display
     nameElem.style.display = 'table';
-    
-    
 
     const remoteVideoStreamElem = document.createElement('video');
     remoteVideoStreamElem.width = 160;
@@ -1609,7 +1629,7 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     remoteVideoContainer.appendChild(nameElem);
     remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
-    document.getElementById('remotes').appendChild(remoteVideoContainer);
+    document.getElementById('remotesMulti').appendChild(remoteVideoContainer);
 
     renderPage(currentPage);
 
@@ -1619,7 +1639,7 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     
     const totalItems = remoteContainers.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
+
     for (let i = 1; i <= totalPages; i++) {
       const pageButton = document.createElement('button');
       pageButton.textContent = i;
@@ -1670,7 +1690,7 @@ function removeAllVideoElements() {
   while (locals.firstChild)
     locals.removeChild(locals.firstChild);
 
-  var remotes = document.getElementById('remotes');
+  var remotes = document.getElementById('remotesMulti');
   const remoteVideoContainers = remotes.getElementsByTagName('div');
   for (let i = 0; remoteVideoContainers && i < remoteVideoContainers.length; i++)
     removeVideoElement(remoteVideoContainers[i]);

@@ -199,7 +199,7 @@
                       private_id: <div id="private_id" style="display: flex;"></div>
                     </div>
                   </div>
-                  <div id="remotes" style="display: flex; justify-content: safe center; overflow-x: auto;">
+                  <div id="remotes" style="display: flex; justify-content: safe; overflow-x: auto;">
                     <div style="border: 2px; border-color: blueviolet;">
                       <div id="local2" style="padding: 0 5px 0 5px;"></div>
                       <div id="local2_buttons" style="text-align: center; display:none;">
@@ -238,10 +238,15 @@
                       </div>
                     </div>
                   </div>
-                  <div id="remotesMulti" style="display: flex; justify-content: safe center; overflow-x: auto;"></div>
-                  <div id="js-pagination" style='display: flex; justify-content: center;'></div>
+                  <div style='display: flex; align-items: center;'>
+                    <div id='participants'></div>
+                    <div id="js-pagination" style='display: flex; justify-content: center;'></div>
+                  </div>
+                  <div id="remotesMulti"
+                    style="display: flex; justify-content: safe; overflow-x: auto; flex-wrap: wrap;"></div>
                   <div id="screen" style="text-align: center;"></div>
                 </div>
+
                 <!-- /.card -->
               </div>
             </div>

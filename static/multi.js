@@ -1020,8 +1020,8 @@ socket.on('connect', () => {
     if (hasRoomsListBeenHandled) return;
 
     let totalParticipants = data.list[0].num_participants
-    
-    if (totalParticipants < 5) { 
+
+    if (totalParticipants < 20) { 
       join({room: 1234, display:$('#myInput').val(), token:null})
     } else {
       alert('You can not join!!! Too many participants');
@@ -1557,7 +1557,7 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 2;
+const itemsPerPage = 5;
 let currentPage = 1;
 
 function renderPage(pageNumber) {
@@ -1578,6 +1578,8 @@ function renderPage(pageNumber) {
 
   const totalItems = remoteContainers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
+  let showParticipants = document.getElementById('participants');
+  showParticipants.innerHTML = `<strong>참여인원 : ${totalItems} 명</strong>`;
 
   for (let i = 1; i <= totalPages; i++) {
     const pageButton = document.createElement('button');

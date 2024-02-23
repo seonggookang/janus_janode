@@ -194,7 +194,7 @@ function join22(room, desc, totalParticipants) {
     alert('참석할 이름을 입력해야 합니다.');
     return;
   }
-  if (totalParticipants < 5) { // 로컬 포함 5명이면 더 이상 못들어옴
+  if (totalParticipants < 20) { // 로컬 포함 5명이면 더 이상 못들어옴
     join({room: room, display:display_name, token:null});
   } else {
     alert('you can not join!!! Too many participants');
@@ -886,7 +886,7 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 2;
+const itemsPerPage = 4;
 let currentPage = 1;
 
 function renderPage(pageNumber) {

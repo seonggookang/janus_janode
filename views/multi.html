@@ -90,6 +90,22 @@
       color: black;
       background-color: rgb(255, 23, 23);
     }
+
+    @keyframes fadeInBlack {
+      from {
+        color: red;
+        /* 시작 색상을 빨간색으로 설정 */
+      }
+
+      to {
+        color: black;
+        /* 끝 색상을 검정색으로 설정 */
+      }
+    }
+
+    .fadeInBlack {
+      animation: fadeInBlack 0.5s ease forwards;
+    }
   </style>
 </head>
 

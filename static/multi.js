@@ -1210,6 +1210,7 @@ socket.on('leaving', ({ data }) => {
   if (data.feed) {
     removeVideoElementByFeed(data.feed);
     closePC(data.feed);
+    renderPage(currentPage);
   }
   _listRooms();
 });
@@ -1578,9 +1579,21 @@ function renderPage(pageNumber) {
 
   const totalItems = remoteContainers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  let showParticipants = document.getElementById('participants');
-  showParticipants.innerHTML = `<strong>참여인원 : ${totalItems} 명</strong>`;
 
+  // 현재 페이지가 총 페이지 수보다 클 경우, 마지막 페이지로 이동
+  if (pageNumber > totalPages) {
+    currentPage = totalPages > 0 ? totalPages : 1;
+    return renderPage(currentPage);
+  }
+  let showParticipants = document.getElementById('participants');
+  
+  function updateParticipants() {
+    showParticipants.innerHTML = `<strong>참여인원: <span class="fadeInBlack">${totalItems}</span>명</strong>`;
+  }
+  
+  updateParticipants();
+  
+  console.log('pageNumber >>>', pageNumber);
   for (let i = 1; i <= totalPages; i++) {
     const pageButton = document.createElement('button');
     pageButton.textContent = i;

@@ -140,7 +140,10 @@ const scheduleConnection2 = (function (room) {
   });
 })();
 
-// const socket = io('https://192.168.50.156:4443/'); // localhost (Peter 주소)
+// const socket = io('https://192.168.50.156:4443/'); // 
+// const socket = io('https://192.168.50.19:4443/'); // 
+// const socket = io('https://192.168.50.116:4443/'); // 
+// const socket = io('https://192.168.56.1:4443/'); // 
 // const socket = io("https://localhost:4443"); // 내 주소
 const socket = io({
   rejectUnauthorized: false,
@@ -679,6 +682,7 @@ socket.on('leaving', ({ data }) => {
   if (data.feed) {
     removeVideoElementByFeed(data.feed);
     closePC(data.feed);
+    renderPage(currentPage);
   }
 });
 
@@ -886,7 +890,7 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 4;
+const itemsPerPage = 5;
 let currentPage = 1;
 
 function renderPage(pageNumber) {
@@ -909,6 +913,11 @@ function renderPage(pageNumber) {
 
   const totalItems = remoteContainers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  if (pageNumber > totalPages) {
+    currentPage = totalPages > 0 ? totalPages : 1;
+    return renderPage(currentPage);
+  }
 
   for (let i = 1; i <= totalPages; i++) {
     const pageButton = document.createElement('button');

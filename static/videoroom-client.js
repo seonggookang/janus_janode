@@ -762,7 +762,7 @@ async function doOffer(feed, display) {
     console.log('pc >>>>> ', pc);
     console.log('됨?3') // 이거 나옴
     try {
-      console.log('됨?3.5') // 이거 나옴
+      console.log('됨?3.5') // 이거
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); // 카메라가 없어도 문제가 되지 않고 있음.
       console.log('됨?4')
       localStream.getTracks().forEach(track => {

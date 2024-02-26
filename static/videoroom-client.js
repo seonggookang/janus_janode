@@ -583,14 +583,17 @@ socket.on('joined', async ({ data }) => {
   _listRooms(); 
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
   try {
+    console.log('1111111111111111111111');
     const offer = await doOffer(data.feed, data.display, false);
+    console.log('222222222222222222222222');
+
     configure({ feed: data.feed, jsep: offer });
     subscribeTo(data.publishers, data.room);
-    var vidTrack = localStream.getVideoTracks();
-    vidTrack.forEach(track => track.enabled = true); // 이게 false로 돼있어서 join시, 항상 꺼진 화면으로 시작됐음.
-    var vidTrack = localStream.getAudioTracks();
-    vidTrack.forEach(track => track.enabled = true);
-
+    // localStream이 없으니까 에러가 나는 중
+    // var vidTrack = localStream.getVideoTracks();
+    // vidTrack.forEach(track => track.enabled = true); // 이게 false로 돼있어서 join시, 항상 꺼진 화면으로 시작됐음.
+    // var vidTrack = localStream.getAudioTracks();
+    // vidTrack.forEach(track => track.enabled = true);
   } catch (e) {
     console.log('error while doing offer', e);
   }
@@ -627,7 +630,7 @@ socket.on('allowed', ({ data }) => {
 });
 
 socket.on('configured', async ({ data, _id }) => {
-  console.log('feed configured', data);
+  console.log('feed configured >>> ', data);
   pendingOfferMap.delete(_id);
   const pc = pcMap.get(data.feed);
   if (pc && data.jsep) {
@@ -695,7 +698,6 @@ socket.on('rooms-list', ({ data }) => {
   // var parsedData = JSON.parse(data);
   $('#room_list').html('');
   data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
-    console.log('rooms >>> ', rooms);
     // $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
     $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description + "\", "+rooms.num_participants+");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
   });
@@ -757,15 +759,25 @@ async function doOffer(feed, display) {
 
     pcMap.set(feed, pc);
 
+    console.log('pc >>>>> ', pc);
+    console.log('됨?3') // 이거 나옴
     try {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      console.log('됨?3.5') // 이거 나옴
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); // 카메라가 없어도 문제가 되지 않고 있음.
+      console.log('됨?4')
       localStream.getTracks().forEach(track => {
-        console.log('adding track', track);
-        pc.addTrack(track, localStream);
+        console.log('adding track >>> ', track);
+        pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
       });
+      console.log('됨?5')
+      console.log('localStream 있을 때 pc 111111111 >>> ', pc);
       setLocalVideoElement(localStream, feed, display);
     } catch (e) {
+      console.log('됨?6') // 이거 나옴
+      console.log("카메라가 없을 때 실행되는 코드")
       console.log('error while doing offer', e);
+      console.log('localStream 없을 때 pc 222222222 >>> ', pc);
+      setLocalVideoElement(null, feed, display); // localStream 자리에 null을 넣음으로써 video, audio가 들어오지 않음을 표시
       removeVideoElementByFeed(feed);
       closePC(feed);
       return;
@@ -792,6 +804,7 @@ async function doOffer(feed, display) {
 }
 
 async function doAnswer(feed, display, offer) {
+  console.log('이건되고있나???????????')
   if (!pcMap.has(feed)) {
     const pc = new RTCPeerConnection({
       'iceServers': [{
@@ -822,7 +835,15 @@ async function doAnswer(feed, display, offer) {
       };
 
       const remoteStream = event.streams[0];
-      setRemoteVideoElement(remoteStream, feed, display);
+      // 지금 여기까지도 안 오는 듯.
+      console.log('remoteStream >>>>> ', remoteStream);
+      // setRemoteVideoElement(remoteStream, feed, display);
+
+      if (remoteStream) {
+        setRemoteVideoElement(remoteStream, feed, display);
+      } else {
+        setRemoteVideoElement(null, feed, display);
+      }
     };
 
     pcMap.set(feed, pc);
@@ -855,6 +876,7 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
     nameElem.style.display = 'table';
 
     if (localStream) {
+      console.log('Yes localStream')
       const localVideoStreamElem = document.createElement('video');
       //localVideo.id = 'video_'+feed;
       localVideoStreamElem.width = 320;
@@ -869,6 +891,19 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoContainer.appendChild(nameElem);
       localVideoContainer.appendChild(localVideoStreamElem);
 
+      document.getElementById('locals').appendChild(localVideoContainer);
+    } else {
+      console.log('No localStream')
+      const blackScreenElem = document.createElement('div');
+      blackScreenElem.style.width = '320px';
+      blackScreenElem.style.height = '240px';
+      blackScreenElem.style.backgroundColor = 'black';
+    
+      const localVideoContainer = document.createElement('div');
+      localVideoContainer.id = 'video_' + feed;
+      localVideoContainer.appendChild(nameElem);
+      localVideoContainer.appendChild(blackScreenElem);
+    
       document.getElementById('locals').appendChild(localVideoContainer);
     }
   } else {
@@ -916,7 +951,9 @@ function renderPage(pageNumber) {
 
   if (pageNumber > totalPages) {
     currentPage = totalPages > 0 ? totalPages : 1;
-    return renderPage(currentPage);
+  // return renderPage(currentPage); // 여기서 계속 재귀함수 호출되고 있었음. maximum call stack 초과에러 지워주는 코드.
+  } else if ( pageNumber < 1) {
+    pageNumber = 1;
   }
 
   for (let i = 1; i <= totalPages; i++) {
@@ -943,6 +980,7 @@ function renderPage(pageNumber) {
   } 
 }
 
+// 이거 조차 실행이 안되고 있음.
 function setRemoteVideoElement(remoteStream, feed, display) {
   if (!feed) return;
 
@@ -951,21 +989,39 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     nameElem.innerHTML = display + ' (' + feed + ')';
     nameElem.style.display = 'table';
 
-    const remoteVideoStreamElem = document.createElement('video');
-    remoteVideoStreamElem.width = 320;
-    remoteVideoStreamElem.height = 240;
-    remoteVideoStreamElem.autoplay = true;
-    remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
-    if (remoteStream)
+
+    if (remoteStream) {
+
+      console.log('Yes RemoteStream')
+      const remoteVideoStreamElem = document.createElement('video');
+      remoteVideoStreamElem.width = 320;
+      remoteVideoStreamElem.height = 240;
+      remoteVideoStreamElem.autoplay = true;
+      remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
       remoteVideoStreamElem.srcObject = remoteStream;
 
-    const remoteVideoContainer = document.createElement('div');
-    remoteVideoContainer.id = 'video_' + feed;
-    remoteVideoContainer.classList.add('remote-container');
-    remoteVideoContainer.appendChild(nameElem);
-    remoteVideoContainer.appendChild(remoteVideoStreamElem);
+      const remoteVideoContainer = document.createElement('div');
+      remoteVideoContainer.id = 'video_' + feed;
+      remoteVideoContainer.classList.add('remote-container');
+      remoteVideoContainer.appendChild(nameElem);
+      remoteVideoContainer.appendChild(remoteVideoStreamElem);
 
-    document.getElementById('remotes').appendChild(remoteVideoContainer);
+      document.getElementById('remotes').appendChild(remoteVideoContainer);
+
+    } else {
+      console.log('No RemoteStream')
+      const blackScreenElem = document.createElement('div');
+      blackScreenElem.style.width = '320px';
+      blackScreenElem.style.height = '240px';
+      blackScreenElem.style.backgroundColor = 'black';
+    
+      const localVideoContainer = document.createElement('div');
+      localVideoContainer.id = 'video_' + feed;
+      localVideoContainer.appendChild(nameElem);
+      localVideoContainer.appendChild(blackScreenElem);
+    
+      document.getElementById('remotes').appendChild(localVideoContainer);
+    }
 
     renderPage(currentPage);
 

@@ -999,8 +999,7 @@ function _listForward({ room = myRoom, secret = 'adminpwd' }) {
   });
 }
 
-// 여기에서 사용할 변수 선언.
-let hasRoomsListBeenHandled = false;
+
 
 socket.on('connect', () => {
   console.log('socket connected');
@@ -1012,7 +1011,13 @@ socket.on('connect', () => {
   socket.sendBuffer = [];
   // var display_name = $('#myInput').val();
   // join({room: 1264989511454137, display:display_name, token:null});
-  
+  handleRoomsList();
+});
+
+// 여기에서 사용할 변수 선언.
+let hasRoomsListBeenHandled = false;
+
+function handleRoomsList() {
   //scheduleConnection(0.1);
   // 이 밑의 함수가 딱 1회만 실행 하고싶다.
   socket.on('rooms-list', ({ data }) => {
@@ -1024,13 +1029,13 @@ socket.on('connect', () => {
     if (totalParticipants < 20) { 
       join({room: 1234, display:$('#myInput').val(), token:null})
     } else {
-      alert('You can not join!!! Too many participants');
+      alert(`You can not join!!! Already Too many participants`);
     }
 
     // 이벤트 핸들러가 실행되었음을 표시
     hasRoomsListBeenHandled = true;
   });
-});
+}
 
 socket.on('disconnect', () => {
   console.log('socket disconnected');

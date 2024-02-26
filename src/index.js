@@ -116,7 +116,6 @@ function initFrontEnd() {
 
     
     const response = janodeManagerHandle.list(); // 이것을 'connect'에도 보내면 될텐데.
-    console.log(`response >>>>>>>>>>> ${response}`)
     // replyEvent(socket, 'rooms-list', response, _id);
 
     const clientHandles = (function () {

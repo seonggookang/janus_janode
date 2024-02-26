@@ -595,7 +595,7 @@ socket.on('joined', async ({ data }) => {
     // var vidTrack = localStream.getAudioTracks();
     // vidTrack.forEach(track => track.enabled = true);
   } catch (e) {
-    console.log('error while doing offer', e);
+    console.log('조인할 떄 에러생김!! error while doing offer >>> ', e);
   }
 });
 
@@ -631,15 +631,21 @@ socket.on('allowed', ({ data }) => {
 
 socket.on('configured', async ({ data, _id }) => {
   console.log('feed configured >>> ', data);
+  // 카메라가 있는 쪽에서는 data에 jsep가 있고, 
+  // 카메라가 없는 쪽에서는 data에 jsep가 없음.
   pendingOfferMap.delete(_id);
   const pc = pcMap.get(data.feed);
   if (pc && data.jsep) {
     try {
       await pc.setRemoteDescription(data.jsep);
       console.log('configure remote sdp OK');
+      console.log('data.jsep.type >>> ', data.jsep.type);
       if (data.jsep.type === 'offer') {
+        console.log('answer 111 >>> ', answer);
         const answer = await doAnswer(data.feed, null, data.jsep);
+        console.log('answer 222 >>> ', answer);
         start(data.feed, answer);
+
       }
     } catch (e) {
       console.log('error setting remote sdp', e);
@@ -762,24 +768,26 @@ async function doOffer(feed, display) {
     console.log('pc >>>>> ', pc);
     console.log('됨?3') // 이거 나옴
     try {
-      console.log('됨?3.5') // 이거
+      console.log('됨?3.5') // 이거 나옴
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); // 카메라가 없어도 문제가 되지 않고 있음.
-      console.log('됨?4')
+      console.log('localStream 카메라 있을 때 >>> ', localStream);
+      console.log('됨?4') // 이거 안나옴
       localStream.getTracks().forEach(track => {
         console.log('adding track >>> ', track);
         pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
       });
-      console.log('됨?5')
-      console.log('localStream 있을 때 pc 111111111 >>> ', pc);
       setLocalVideoElement(localStream, feed, display);
     } catch (e) {
-      console.log('됨?6') // 이거 나옴
-      console.log("카메라가 없을 때 실행되는 코드")
-      console.log('error while doing offer', e);
-      console.log('localStream 없을 때 pc 222222222 >>> ', pc);
-      setLocalVideoElement(null, feed, display); // localStream 자리에 null을 넣음으로써 video, audio가 들어오지 않음을 표시
-      removeVideoElementByFeed(feed);
-      closePC(feed);
+      localStream = new MediaStream(); // 빈 미디어 스트림 생성
+      console.log('카메라 없음!!! error while doing offer >>> ', e, localStream);
+      localStream.getTracks().forEach(track => {
+        console.log('adding track >>> ', track);
+        pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
+      });
+      setLocalVideoElement(localStream, feed, display); // localStream 자리에 null을 넣음으로써 video, audio가 들어오지 않음을 표시
+      // setLocalVideoElement(localStream, feed, display); // localStream 자리에 null을 넣음으로써 video, audio가 들어오지 않음을 표시
+      // removeVideoElementByFeed(feed);
+      // closePC(feed);
       return;
     }
   }
@@ -821,7 +829,7 @@ async function doAnswer(feed, display, offer) {
       }
     };
     pc.ontrack = event => {
-      console.log('pc.ontrack', event);
+      console.log('pc.ontrack >>> ', event);
 
       event.track.onunmute = evt => {
         console.log('track.onunmute', evt);
@@ -840,8 +848,10 @@ async function doAnswer(feed, display, offer) {
       // setRemoteVideoElement(remoteStream, feed, display);
 
       if (remoteStream) {
+        console.log('hihihihi')
         setRemoteVideoElement(remoteStream, feed, display);
       } else {
+        console.log('byebyebye')
         setRemoteVideoElement(null, feed, display);
       }
     };

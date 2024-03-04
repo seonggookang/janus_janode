@@ -150,6 +150,8 @@ function initFrontEnd() {
     /* USER API */
     /*----------*/
 
+
+    // 여기서 publisher를 안태워주고 그냥 보내서 그런거 아님??
     socket.on('join', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} join received`);
       const { _id, data: joindata = {} } = evtdata;
@@ -285,13 +287,18 @@ function initFrontEnd() {
     socket.on('configure', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} configure received`);
       const { _id, data: confdata = {} } = evtdata;
-      console.log(evtdata);
-
+      console.log('evtdata in configure >>>', evtdata);
+      
+      
+      console.log('confdata >>>>> ', confdata); // feed, bitrate 2개 객체로 나옴.
       const handle = clientHandles.getHandleByFeed(confdata.feed);
+      console.log('handle >>>>> ', handle); // undefined
+      
       if (!checkSessions(janodeSession, handle, socket, evtdata)) return;
-
+      
       try {
         const response = await handle.configure(confdata);
+        console.log('response 11 >>>>> ', response); // 아무것도 안나온다..
         delete response.configured;
         replyEvent(socket, 'configured', response, _id);
         Logger.info(`${LOG_NS} ${remote} configured sent`);
@@ -507,15 +514,35 @@ function initFrontEnd() {
         const response = await janodeManagerHandle.create(createdata);
         replyEvent(socket, 'created', response, _id);
         Logger.info(`${LOG_NS} ${remote} created sent`);
-        console.log('response >>> ', response);
       } catch ({ message }) {
         replyError(socket, message, createdata, _id);
       }
     });
 
+
+
+
+    socket.on('update', async (evtdata = {}) => { // emit 만드는
+      Logger.info(`${LOG_NS} ${remote} update received`);
+      console.log('evtdata in update >>> ', evtdata);
+      const { _id, data: destroydata = {} } = evtdata;
+      
+      if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
+
+      try {
+        const response = await janodeManagerHandle.update(destroydata);
+        replyEvent(socket, 'updated', response, _id); // 이거에 대해 만들어야함
+        Logger.info(`${LOG_NS} ${remote} destroyed sent`);
+      } catch ({ message }) {
+        replyError(socket, message, destroydata, _id);
+      }
+    });
+
+
+
+
     socket.on('destroy', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} destroy received`);
-      console.log(evtdata.data);
       const { _id, data: destroydata = {} } = evtdata;
 
       if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
@@ -529,6 +556,8 @@ function initFrontEnd() {
         replyError(socket, message, destroydata, _id);
       }
     });
+
+  
 
     socket.on('allow', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} allow received`);
@@ -642,7 +671,6 @@ function checkSessions(session, handle, socket, { data, _id }) {
     return false;
   }
   if (!handle) {
-    Logger.info('socket.info >>> ', socket);
     replyError(socket, 'handle-not-available', data, _id);
     return false;
   }
@@ -663,7 +691,7 @@ function replyError(socket, message, request, _id) {
   const evtdata = {
     error: message,
   };
-  console.log(message);
+  console.log('message >>>>> ', message);
   if (request) evtdata.request = request;
   if (_id) evtdata._id = _id;
 

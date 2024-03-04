@@ -807,7 +807,7 @@ class VideoRoomHandle extends Handle {
    * @param {string} [params.token] - The optional token needed
    * @returns {Promise<module:videoroom-plugin~VIDEOROOM_EVENT_SUB_JOINED>}
    */
-  async joinSubscriber({ room, feed, audio, video, data, private_id, sc_substream_layer, sc_substream_fallback_ms, sc_temporal_layers, autoupdate, token }) {
+  async joinSubscriber({ room, feed, audio, video, offer_video,offer_audio,data, private_id, sc_substream_layer, sc_substream_fallback_ms, sc_temporal_layers, autoupdate, token }) {
     const body = {
       request: REQUEST_JOIN,
       ptype: PTYPE_LISTENER,
@@ -817,6 +817,8 @@ class VideoRoomHandle extends Handle {
     if (typeof audio === 'boolean') body.audio = audio;
     if (typeof video === 'boolean') body.video = video;
     if (typeof data === 'boolean') body.data = data;
+    // if (typeof offer_video === 'boolean') body.offer_video = offer_video;
+    if (typeof offer_audio === 'boolean') body.offer_audio = offer_audio;
     if (typeof private_id === 'number') body.private_id = private_id;
     if (typeof token === 'string') body.token = token;
     if (typeof sc_substream_layer === 'number') body.substream = sc_substream_layer;

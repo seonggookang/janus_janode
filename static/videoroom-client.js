@@ -205,7 +205,9 @@ function join22(room, desc, totalParticipants) {
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
-  console.log('join()... to '+ room);
+  console.log('room 33 >>> ', room);
+  console.log('display 33 >>> ', display);
+  console.log('token 33 >>> ', token);
   const joinData = {
     room,
     display,
@@ -218,12 +220,19 @@ function join({ room = myRoom, display = myName, token = null }) {
   });
 }
 
-function subscribe({ feed, room = myRoom, substream, temporal }) {
+// 현재 화면에 노출된 사람들은 비디오 : O, 오디오 : O
+// 다른 페이지에 있는 사람들거는      비디오 : X, 오디오 : O
+function subscribe({ feed, room = myRoom,  offer_audio = false, substream, temporal }) {
+  
+  // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
+  
   const subscribeData = {
     room,
     feed,
+    // offer_video,
+    offer_audio,
   };
-
+  console.log('subscribeData >>>>> ', subscribeData);
   if (typeof substream !== 'undefined') subscribeData.sc_substream_layer = substream;
   if (typeof temporal !== 'undefined') subscribeData.sc_temporal_layers = temporal;
 
@@ -234,6 +243,7 @@ function subscribe({ feed, room = myRoom, substream, temporal }) {
 }
 
 function subscribeTo(peers, room = myRoom) {
+  // 각각의 peer들마다 모두 subscribe는 하는 상태임.
   peers.forEach(({ feed }) => {
     subscribe({ feed, room });
   });
@@ -250,8 +260,9 @@ function trickle({ feed, candidate }) {
   });
 }
 
-function configure({ feed, jsep, restart, substream, temporal }) {
-  console.log('feed======', feed);
+// jsep가 뭔가 기본 디폴트로 돌아가는게 없나? ㅋㅋ
+function configure({ feed, jsep , restart, substream, temporal }) {
+
   const configureData = {
     feed,
     audio: true,
@@ -260,7 +271,7 @@ function configure({ feed, jsep, restart, substream, temporal }) {
   };
   if (typeof substream !== 'undefined') configureData.sc_substream_layer = substream;
   if (typeof temporal !== 'undefined') configureData.sc_temporal_layers = temporal;
-  if (jsep) configureData.jsep = jsep;
+  if (jsep) configureData.jsep = jsep; // jsep 이게 없어도 동작이 되게.
   if (typeof restart === 'boolean') configureData.restart = restart;
 
   const configId = getId();
@@ -270,8 +281,11 @@ function configure({ feed, jsep, restart, substream, temporal }) {
     _id: configId,
   });
 
-  if (jsep) pendingOfferMap.set(configId, { feed });
+  // if (jsep) pendingOfferMap.set(configId, { feed });
+  pendingOfferMap.set(configId, { feed });
+  console.log('pendingOfferMap >>> ' ,pendingOfferMap);
 }
+
 function configure_bitrate_audio_video(mode) {
   var feed = $('#local_feed').text();
 
@@ -358,7 +372,6 @@ function _leave({ feed }) {
     feed,
   };
 
-  console.log(leaveData);
   socket.emit('leave', {
     data: leaveData,
     _id: getId(),
@@ -454,6 +467,36 @@ function _listRooms(desc) {
   socket.emit('list-rooms', { // socket.on('rooms-list' 이거랑 매칭 되네 ???
     _id: getId(),
     desc,
+  });
+}
+
+// update 함수 생성 (plugin에서 있지만 사용 안하고 있었음)
+function _update(container, action) {
+  console.log('update를 시도합니다~~~~~~~~~~~~~~~~');
+  const feedId = container.getAttribute('data-feed-id');
+  const mid = container.getAttribute('data-mid');
+  console.log('subscribe >>>>> ', subscribe);
+  console.log('unsubscribe >>>>> ', unsubscribe);
+
+  const subscribeData = {
+    feed: feedId,
+    mid: mid
+  };
+
+  const unsubscribeData = {
+    feed: feedId,
+    mid: mid,
+    sub_mid: mid
+  };
+
+  const data = action === 'subscribe' ? subscribeData : unsubscribeData;
+
+  socket.emit('update', {
+    data: {
+      subscribe: action === 'subscribe' ? [data] : [],
+      unsubscribe: action === 'unsubscribe' ? [data] : [],
+    },
+    _id: getId(),
   });
 }
 
@@ -575,6 +618,8 @@ socket.on('videoroom-error', ({ error, _id }) => {
   }
 });
 
+// data.publishers가 인식이 되면 됨
+// 'join'추적해서 data에 왜!!!!! publishers 안찍히는지 확인
 socket.on('joined', async ({ data }) => {
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
@@ -582,29 +627,30 @@ socket.on('joined', async ({ data }) => {
   $('#leave_all').prop('disabled', false);
   _listRooms(); 
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
+  console.log('data.publishers 이것만 인식되면 됨 !!!!! >>>>> ', data.publishers);
+  console.log('data >>>>> ', data);
   try {
-    console.log('1111111111111111111111');
-    const offer = await doOffer(data.feed, data.display, false);
-    console.log('222222222222222222222222');
-
+    const offer = await doOffer(data.feed, data.display, false); // 에러발생
+    console.log('offer in joined >>> ', offer); // 이게 안잡혀서 문제가 되고 있던 거
     configure({ feed: data.feed, jsep: offer });
-    subscribeTo(data.publishers, data.room);
+    subscribeTo(data.publishers, data.room); // 카메라가 없는거에 대해 data.publishers가 아예 인식이 안되는 상태
     // localStream이 없으니까 에러가 나는 중
     // var vidTrack = localStream.getVideoTracks();
     // vidTrack.forEach(track => track.enabled = true); // 이게 false로 돼있어서 join시, 항상 꺼진 화면으로 시작됐음.
     // var vidTrack = localStream.getAudioTracks();
     // vidTrack.forEach(track => track.enabled = true);
   } catch (e) {
-    console.log('조인할 떄 에러생김!! error while doing offer >>> ', e);
+    console.log('조인할 때 에러생김!! error while doing offer >>> ', e);
   }
 });
 
 socket.on('subscribed', async ({ data }) => {
+  console.log('subscribed : 상대 카메라 없으면 이것도 안함');
   console.log('subscribed to feed', data);
 
   try {
     const answer = await doAnswer(data.feed, data.display, data.jsep);
-    start({ feed: data.feed, jsep: answer });
+    start({ feed: data.feed, jsep: answer }); // 이건 사실 상 콘솔만 찍는거 아닌강?
     _listRooms();
   } catch (e) { console.log('error while doing answer', e); }
 });
@@ -630,27 +676,56 @@ socket.on('allowed', ({ data }) => {
 });
 
 socket.on('configured', async ({ data, _id }) => {
-  console.log('feed configured >>> ', data);
-  // 카메라가 있는 쪽에서는 data에 jsep가 있고, 
-  // 카메라가 없는 쪽에서는 data에 jsep가 없음.
+  console.log('feed configured >>> ', data); // feed,jsep, room
+  console.log('data.jsep >>>>> ', data.jsep);
+  // 카메라가 있는 쪽 --> { type, sdp }
+  // 카메라가 없는 쪽 --> undefined
+  console.log('_id', _id);
   pendingOfferMap.delete(_id);
   const pc = pcMap.get(data.feed);
+  console.log('pc >>>>>>>>>>> ', pc)
+
+  // 카메라가 있을 때
   if (pc && data.jsep) {
+    console.log('카메라가 있으면 보이는 코드')
     try {
       await pc.setRemoteDescription(data.jsep);
       console.log('configure remote sdp OK');
-      console.log('data.jsep.type >>> ', data.jsep.type);
       if (data.jsep.type === 'offer') {
-        console.log('answer 111 >>> ', answer);
         const answer = await doAnswer(data.feed, null, data.jsep);
-        console.log('answer 222 >>> ', answer);
         start(data.feed, answer);
-
       }
     } catch (e) {
       console.log('error setting remote sdp', e);
     }
+  } else {
+    console.log('카메라 없으면 보이는 코드')
   }
+  
+  // if (pc) {
+  //   if (data.jsep) {
+  //     try {
+  //       await pc.setRemoteDescription(data.jsep); // 이걸 안하고 있어서 안되고 있었음.
+  //       console.log('카메라가 있으면 보이는 코드');
+  //       console.log('configure remote sdp OK !!!');
+  //       if (data.jsep.type === 'offer') {
+  //         const answer = await doAnswer(data.feed, null, data.jsep);
+  //         start(data.feed, answer); // 단순 콘솔 찍는 코드
+  //       }
+  //     } catch (e) {
+  //       console.log('error setting remote sdp >>> ', e);
+  //     }
+  //   } else {
+
+  //     // 카메라가 없는 경우에도 처리할 로직
+  //     console.log('카메라 없으면 보이는 코드');
+  //     // 필요한 경우 여기에 카메라가 없을 때 수행할 추가적인 작업을 추가
+  //     // await pc.setRemoteDescription(null); // 이걸 안해도 되네.
+  //     // setRemoteVideoElement(null, data.feed, null);
+  //     // const answer = await doAnswer(data.feed, null, null);
+  //     // start(data.feed, answer); // 단순 콘솔 찍는 코드
+  //   }
+  // } 
 });
 
 socket.on('display', ({ data }) => {
@@ -702,6 +777,7 @@ socket.on('exists', ({ data }) => {
 socket.on('rooms-list', ({ data }) => {
   // console.log('data >>>>>> ', data); // janus.plugin.videoroom.jcfg 코드 에서 옴.
   // var parsedData = JSON.parse(data);
+  
   $('#room_list').html('');
   data.list.forEach(rooms => { // data.list.forEach는 내꺼 돌아가고, parsedData.forEach는 peter꺼.
     // $('#room_list').html($('#room_list').html()+"<br>"+rooms.description +" ("+rooms.num_participants+" / "+rooms.max_publishers+")&nbsp;<button class='btn btn-primary btn-xs' onclick='join22("+rooms.room+", \""+rooms.description+"\");'>join</button>&nbsp;"+"<button class='btn btn-primary btn-xs' onclick='destroy_room("+rooms.room+", \""+rooms.description+"\");'>destroy</button>");
@@ -745,14 +821,14 @@ async function _restartSubscriber(feed) {
 }
 
 async function doOffer(feed, display) {
+  console.log('내 자신에 대해 doOffer니까 카메라 유무 관계없이 나옴')
   if (!pcMap.has(feed)) {
     const pc = new RTCPeerConnection({
       'iceServers': [{
         urls: 'stun:stun.l.google.com:19302'
       }],
     });
-
-    pc.onnegotiationneeded = event => console.log('pc.onnegotiationneeded', event);
+    pc.onnegotiationneeded = event => console.log('pc.onnegotiationneeded >>> ', event);
     pc.onicecandidate = event => trickle({ feed, candidate: event.candidate });
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
@@ -765,31 +841,45 @@ async function doOffer(feed, display) {
 
     pcMap.set(feed, pc);
 
-    console.log('pc >>>>> ', pc);
-    console.log('됨?3') // 이거 나옴
     try {
-      console.log('됨?3.5') // 이거 나옴
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }); // 카메라가 없어도 문제가 되지 않고 있음.
-      console.log('localStream 카메라 있을 때 >>> ', localStream);
-      console.log('됨?4') // 이거 안나옴
-      localStream.getTracks().forEach(track => {
-        console.log('adding track >>> ', track);
-        pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
-      });
-      setLocalVideoElement(localStream, feed, display);
-    } catch (e) {
-      localStream = new MediaStream(); // 빈 미디어 스트림 생성
-      console.log('카메라 없음!!! error while doing offer >>> ', e, localStream);
-      localStream.getTracks().forEach(track => {
-        console.log('adding track >>> ', track);
-        pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
-      });
-      setLocalVideoElement(localStream, feed, display); // localStream 자리에 null을 넣음으로써 video, audio가 들어오지 않음을 표시
-      // setLocalVideoElement(localStream, feed, display); // localStream 자리에 null을 넣음으로써 video, audio가 들어오지 않음을 표시
+      // getUserMedia가 안되고 있어서 catch문으로 !
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      console.log('카메라 있다~~~')
+      // 카메라가 모두 있는 상태에서,
+      // 노출 되는 정도를 다르게(총 40명 있다고 가정)
+      // 1페이지에 있는 사람들(20명) : video : o, audio o
+      // 2페이지에 있는 사람들(20명) : video : x, audio o
+
+    } catch (e) { // 여기는 진짜 카메라 자체가 없는 사람
+      // 예제: AudioContext를 사용하여 가상의 오디오 트랙 생성
+      let audioContext = new AudioContext();
+      console.log('audioContext >>> ', audioContext);
+      let oscillator = audioContext.createOscillator();
+      console.log('oscillator >>> ', oscillator);
+      let dst = audioContext.createMediaStreamDestination();
+      console.log('dst >>> ', dst);
+      oscillator.connect(dst);
+      oscillator.start();
+
+      // 가상의 오디오 트랙을 MediaStream에 추가
+      let virtualAudioTrack = dst.stream.getTracks()[0];
+      localStream = new MediaStream([virtualAudioTrack]);
+      // localStream = new MediaStream(); // 빈 미디어 스트림 생성. 카메라 자체가 없어도 localStream있어야함
+      // localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+      // audio와 video에 대한 정보가 나의 위치를 알려주는 결정적인 요소?,
+
+      console.log('카메라 없다~~~')
+
       // removeVideoElementByFeed(feed);
       // closePC(feed);
-      return;
+      // return;
     }
+    localStream.getTracks().forEach(track => {
+      console.log('adding track >>> ', track);
+      pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
+    });
+    setLocalVideoElement(localStream, feed, display);
   }
   else {
     console.log('Performing ICE restart');
@@ -799,8 +889,9 @@ async function doOffer(feed, display) {
   try {
     const pc = pcMap.get(feed);
     const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    console.log('set local sdp OK');
+    console.log('offer in try of doOffer (이게 있어야 서로 연결을 할 듯~! ) >>> ', offer);
+    await pc.setLocalDescription(offer); // 카메라가 없는 쪽에서 이게 필요함
+    console.log('set local sdp OK in doOffer');
     return offer;
   } catch (e) {
     console.log('error while doing offer', e);
@@ -808,11 +899,11 @@ async function doOffer(feed, display) {
     closePC(feed);
     return;
   }
-
 }
 
 async function doAnswer(feed, display, offer) {
-  console.log('이건되고있나???????????')
+  console.log('상대가 카메라가 없으면 이것도 출력 안됨. 그 말은 doAnswer함수실행이 안되고 있다는 것 !')
+  // 카메라가 없는건 감지가 안됨
   if (!pcMap.has(feed)) {
     const pc = new RTCPeerConnection({
       'iceServers': [{
@@ -844,16 +935,9 @@ async function doAnswer(feed, display, offer) {
 
       const remoteStream = event.streams[0];
       // 지금 여기까지도 안 오는 듯.
-      console.log('remoteStream >>>>> ', remoteStream);
-      // setRemoteVideoElement(remoteStream, feed, display);
-
-      if (remoteStream) {
-        console.log('hihihihi')
-        setRemoteVideoElement(remoteStream, feed, display);
-      } else {
-        console.log('byebyebye')
-        setRemoteVideoElement(null, feed, display);
-      }
+      console.log('remoteStream in doAnswer >>>>> ', remoteStream.getTracks().length);
+      setRemoteVideoElement(remoteStream, feed, display); // 이거로 인해 시작됨
+      
     };
 
     pcMap.set(feed, pc);
@@ -862,6 +946,7 @@ async function doAnswer(feed, display, offer) {
   const pc = pcMap.get(feed);
 
   try {
+    console.log('offer in try of doAnswer >>> ', offer)
     await pc.setRemoteDescription(offer);
     console.log('set remote sdp OK');
     const answer = await pc.createAnswer();
@@ -879,14 +964,13 @@ async function doAnswer(feed, display, offer) {
 function setLocalVideoElement(localStream, feed, display, room, description) {
   if (room) document.getElementById('videos').getElementsByTagName('span')[0].innerHTML = '   --- VIDEOROOM (' + room + ' , ' + description +') ---  '; // 로컬 --- LOCALS --- 에서 치환
   if (!feed) return;
-
   if (!document.getElementById('video_' + feed)) {
     const nameElem = document.createElement('span');
     nameElem.innerHTML = display + '(' + feed + ')'; // 스크린 위 표시
     nameElem.style.display = 'table';
-
-    if (localStream) {
-      console.log('Yes localStream')
+    
+    let FinalElem;
+    if (localStream.getTracks().length === 2) { // 본인 카메라가 있을 때
       const localVideoStreamElem = document.createElement('video');
       //localVideo.id = 'video_'+feed;
       localVideoStreamElem.width = 320;
@@ -895,27 +979,27 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
       localVideoStreamElem.muted = 'muted';
       localVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
       localVideoStreamElem.srcObject = localStream;
-
-      const localVideoContainer = document.createElement('div');
-      localVideoContainer.id = 'video_' + feed;
-      localVideoContainer.appendChild(nameElem);
-      localVideoContainer.appendChild(localVideoStreamElem);
-
-      document.getElementById('locals').appendChild(localVideoContainer);
-    } else {
-      console.log('No localStream')
+      FinalElem = localVideoStreamElem;
+    } else { // 본인 카메라 없을 떄
       const blackScreenElem = document.createElement('div');
       blackScreenElem.style.width = '320px';
       blackScreenElem.style.height = '240px';
       blackScreenElem.style.backgroundColor = 'black';
-    
-      const localVideoContainer = document.createElement('div');
-      localVideoContainer.id = 'video_' + feed;
-      localVideoContainer.appendChild(nameElem);
-      localVideoContainer.appendChild(blackScreenElem);
-    
-      document.getElementById('locals').appendChild(localVideoContainer);
+      blackScreenElem.classList.add('black-screen');
+
+      const textElem = document.createElement('div');
+      textElem.innerText = 'No Camera';
+      blackScreenElem.appendChild(textElem);
+      FinalElem = blackScreenElem;
     }
+
+    const localVideoContainer = document.createElement('div');
+    localVideoContainer.id = 'video_' + feed;
+    localVideoContainer.appendChild(nameElem);
+    localVideoContainer.appendChild(FinalElem);
+
+    document.getElementById('locals').appendChild(localVideoContainer);
+   
   } else {
     const localVideoContainer = document.getElementById('video_' + feed);
     if (display) {
@@ -935,37 +1019,57 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 5;
+const itemsPerPage = 1;
 let currentPage = 1;
 
 function renderPage(pageNumber) {
-  
+  console.log('화면이 없어도 이게 돌아감')
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
   const paginationContainer = document.getElementById('js-pagination');
   paginationContainer.innerHTML = '';
 
+  console.log('remoteContainers >>>>> ', remoteContainers);
+  // remoteContainers가 비어 있는 경우 함수 종료
+  if (remoteContainers.length === 0) {
+    return;
+  } 
+  // 이게 계속 도는걸 방지하기위해 위 return 해줘야함.
   remoteContainers.forEach((container, index) => { 
     if (index >= startIndex && index < endIndex) {
+      // update함수 해주면 좋을듯
+      // 현재페이지에 있는 것들 오디오 비디오 모두 subscribe
+      // console.log('내가 지금 보고 있는거')
+      // _update();
+      // _update(`컨테이너의 오디오 & 비디오', null`);
+      // _update(container, 'subscribe');
       container.style.display = 'block';
-      // 여기서 연결해주는 행위를 하고
     } else {
+      console.log('안보여야 하는 container >>>>> ', container);
+      // 현재 페이지에 없는 것들은 오디오만 subscribe, 비디오 unsubscribe
+      console.log('안 보이는 쪽에서만 조절하면 되지 않나? 보이는 쪽에서는 지금처럼 노출이되게하고')
+      // _update(`컨테이너의 오디오`, `컨테이너의 비디오`);
       container.style.display = 'none';
-      // 여기서 끊어주는 행위를 하면 되지 않을까? feedliving이나 뭐 그런거.
+      // container.style.display = 'none';
+      // 아예 여기서 unsubscribe를 하든 끊어버리든 pause를 하든
+      // 화면만 불러오지마
+      // 오디오는 불러오고!
     }
   });
-
+  
+  
   const totalItems = remoteContainers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-
+  
+  console.log('pageNumber in renderPage >>> ', pageNumber);
+  console.log('totalPages in renderPage >>> ', totalPages);
+  
   if (pageNumber > totalPages) {
     currentPage = totalPages > 0 ? totalPages : 1;
-  // return renderPage(currentPage); // 여기서 계속 재귀함수 호출되고 있었음. maximum call stack 초과에러 지워주는 코드.
-  } else if ( pageNumber < 1) {
-    pageNumber = 1;
+    return renderPage(currentPage);
   }
-
+  
   for (let i = 1; i <= totalPages; i++) {
     const pageButton = document.createElement('button');
     pageButton.textContent = i;
@@ -974,15 +1078,12 @@ function renderPage(pageNumber) {
     if (i === pageNumber) {
       pageButton.classList.add('clicked');
     }
-
     paginationContainer.appendChild(pageButton);
     pageButton.addEventListener('click', function() {
       const previouslyClickedButton = paginationContainer.querySelector('.pagination-button.clicked');
       if (previouslyClickedButton) {
         previouslyClickedButton.classList.remove('clicked');
       }
-      
-      this.classList.add('clicked');  // 이건 지워줘도 되지 않을까? 위에 i === pageNumber가 있으니까
 
       currentPage = parseInt(this.textContent);
       renderPage(currentPage);
@@ -992,6 +1093,7 @@ function renderPage(pageNumber) {
 
 // 이거 조차 실행이 안되고 있음.
 function setRemoteVideoElement(remoteStream, feed, display) {
+  console.log('setRemoteVideoElement 시작!') // 아예 카메라 없는게 동작도 안되는구나
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
@@ -999,44 +1101,40 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     nameElem.innerHTML = display + ' (' + feed + ')';
     nameElem.style.display = 'table';
 
-
-    if (remoteStream) {
-
-      console.log('Yes RemoteStream')
+    let FinalElem;
+    if (remoteStream.getTracks().length === 2) { // 상대 카메라 있을 때
       const remoteVideoStreamElem = document.createElement('video');
       remoteVideoStreamElem.width = 320;
       remoteVideoStreamElem.height = 240;
       remoteVideoStreamElem.autoplay = true;
       remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
       remoteVideoStreamElem.srcObject = remoteStream;
-
-      const remoteVideoContainer = document.createElement('div');
-      remoteVideoContainer.id = 'video_' + feed;
-      remoteVideoContainer.classList.add('remote-container');
-      remoteVideoContainer.appendChild(nameElem);
-      remoteVideoContainer.appendChild(remoteVideoStreamElem);
-
-      document.getElementById('remotes').appendChild(remoteVideoContainer);
-
-    } else {
-      console.log('No RemoteStream')
+      FinalElem = remoteVideoStreamElem;
+    } else {  // 상대 카메라 없을 때
       const blackScreenElem = document.createElement('div');
       blackScreenElem.style.width = '320px';
       blackScreenElem.style.height = '240px';
       blackScreenElem.style.backgroundColor = 'black';
-    
-      const localVideoContainer = document.createElement('div');
-      localVideoContainer.id = 'video_' + feed;
-      localVideoContainer.appendChild(nameElem);
-      localVideoContainer.appendChild(blackScreenElem);
-    
-      document.getElementById('remotes').appendChild(localVideoContainer);
+      blackScreenElem.classList.add('black-screen');
+      
+      const textElem = document.createElement('div');
+      textElem.innerText = 'No Camera';
+      blackScreenElem.appendChild(textElem);
+      FinalElem = blackScreenElem;   
     }
+
+    const remoteVideoContainer = document.createElement('div');
+    remoteVideoContainer.id = 'video_' + feed;
+    remoteVideoContainer.classList.add('remote-container');
+    remoteVideoContainer.appendChild(nameElem);
+    remoteVideoContainer.appendChild(FinalElem);
+    document.getElementById('remotes').appendChild(remoteVideoContainer);
 
     renderPage(currentPage);
 
     const remoteContainers = document.querySelectorAll('.remote-container');
     const paginationContainer = document.getElementById('js-pagination');
+    
     paginationContainer.innerHTML = '';
     
     const totalItems = remoteContainers.length;

@@ -618,9 +618,11 @@ socket.on('videoroom-error', ({ error, _id }) => {
   }
 });
 
+let allPeople ;
 // data.publishers가 인식이 되면 됨
 // 'join'추적해서 data에 왜!!!!! publishers 안찍히는지 확인
 socket.on('joined', async ({ data }) => {
+  allPeople = data;
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
   $('#curr_room_name').val(data.description);
@@ -842,15 +844,16 @@ async function doOffer(feed, display) {
     pcMap.set(feed, pc);
 
     try {
-      // getUserMedia가 안되고 있어서 catch문으로 !
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-      console.log('카메라 있다~~~')
-      // 카메라가 모두 있는 상태에서,
-      // 노출 되는 정도를 다르게(총 40명 있다고 가정)
-      // 1페이지에 있는 사람들(20명) : video : o, audio o
-      // 2페이지에 있는 사람들(20명) : video : x, audio o
+      // 1페이지를 가리키고 있다면
+      // 1페이지에 있는 사람들(2명) : video : o, audio o
+      // 2페이지에 있는 사람들(2명) : video : x, audio o
 
-    } catch (e) { // 여기는 진짜 카메라 자체가 없는 사람
+      // 2페이지를 가리키고 있다면
+      // 1페이지에 있는 사람들(2명) : video : x, audio o
+      // 2페이지에 있는 사람들(2명) : video : o, audio o
+
+    } catch (e) { // 여기는 카메라 자체가 없는 사람
       // 예제: AudioContext를 사용하여 가상의 오디오 트랙 생성
       let audioContext = new AudioContext();
       console.log('audioContext >>> ', audioContext);
@@ -875,6 +878,7 @@ async function doOffer(feed, display) {
       // closePC(feed);
       // return;
     }
+    console.log('localStream.getTracks() >>> ', localStream.getTracks());
     localStream.getTracks().forEach(track => {
       console.log('adding track >>> ', track);
       pc.addTrack(track, localStream); // 이걸 해줘야 할 듯, 카마레가 있든 없든.
@@ -1019,11 +1023,11 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 1;
+const itemsPerPage = 2;
 let currentPage = 1;
 
 function renderPage(pageNumber) {
-  console.log('화면이 없어도 이게 돌아감')
+  console.log('allPeople in renderPage >>>>> ', allPeople); // 다른 인원들도 연동되야함..
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
@@ -1037,6 +1041,7 @@ function renderPage(pageNumber) {
   } 
   // 이게 계속 도는걸 방지하기위해 위 return 해줘야함.
   remoteContainers.forEach((container, index) => { 
+    console.log('container in renderPage >>>>> ', container);
     if (index >= startIndex && index < endIndex) {
       // update함수 해주면 좋을듯
       // 현재페이지에 있는 것들 오디오 비디오 모두 subscribe
@@ -1046,9 +1051,9 @@ function renderPage(pageNumber) {
       // _update(container, 'subscribe');
       container.style.display = 'block';
     } else {
-      console.log('안보여야 하는 container >>>>> ', container);
+      
       // 현재 페이지에 없는 것들은 오디오만 subscribe, 비디오 unsubscribe
-      console.log('안 보이는 쪽에서만 조절하면 되지 않나? 보이는 쪽에서는 지금처럼 노출이되게하고')
+      
       // _update(`컨테이너의 오디오`, `컨테이너의 비디오`);
       container.style.display = 'none';
       // container.style.display = 'none';
@@ -1061,9 +1066,6 @@ function renderPage(pageNumber) {
   
   const totalItems = remoteContainers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
-  console.log('pageNumber in renderPage >>> ', pageNumber);
-  console.log('totalPages in renderPage >>> ', totalPages);
   
   if (pageNumber > totalPages) {
     currentPage = totalPages > 0 ? totalPages : 1;

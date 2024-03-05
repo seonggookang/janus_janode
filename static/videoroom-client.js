@@ -205,9 +205,6 @@ function join22(room, desc, totalParticipants) {
 }
 
 function join({ room = myRoom, display = myName, token = null }) {
-  console.log('room 33 >>> ', room);
-  console.log('display 33 >>> ', display);
-  console.log('token 33 >>> ', token);
   const joinData = {
     room,
     display,
@@ -220,17 +217,15 @@ function join({ room = myRoom, display = myName, token = null }) {
   });
 }
 
-// 현재 화면에 노출된 사람들은 비디오 : O, 오디오 : O
-// 다른 페이지에 있는 사람들거는      비디오 : X, 오디오 : O
-function subscribe({ feed, room = myRoom,  offer_audio = false, substream, temporal }) {
+// 현재 화면에 노출된 peers --> 비디오 : O, 오디오 : O
+// 다른 페이지에 있는 peers --> 비디오 : X, 오디오 : O
+function subscribe({ feed, room = myRoom, substream, temporal }) {
   
   // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
   
   const subscribeData = {
     room,
     feed,
-    // offer_video,
-    offer_audio,
   };
   console.log('subscribeData >>>>> ', subscribeData);
   if (typeof substream !== 'undefined') subscribeData.sc_substream_layer = substream;
@@ -618,19 +613,29 @@ socket.on('videoroom-error', ({ error, _id }) => {
   }
 });
 
-let allPeople ;
+let allPeople = [];
 // data.publishers가 인식이 되면 됨
 // 'join'추적해서 data에 왜!!!!! publishers 안찍히는지 확인
 socket.on('joined', async ({ data }) => {
-  allPeople = data;
+  
+  // 다른 사람이 조인할 때는 이게 실행이 안되니까.
+  console.log('data in joined >>>>> ', data);
+  console.log('data.publishers in joined >>>>> ', data.publishers);
+  
+  // data 객체를 복사하여 새로운 객체를 생성하고 이를 allPeople 배열에 추가합니다.
+  const newData = {...data};
+  console.log('newData.publishers in joined >>> ', newData.publishers); // 객체로 나옴.
+  allPeople.push(newData.publishers);
+  // console.log('allPeople in joined >>>>> ', allPeople);
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
   $('#curr_room_name').val(data.description);
   $('#leave_all').prop('disabled', false);
   _listRooms(); 
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
-  console.log('data.publishers 이것만 인식되면 됨 !!!!! >>>>> ', data.publishers);
-  console.log('data >>>>> ', data);
+  
+  // renderPage(null, newData);
+
   try {
     const offer = await doOffer(data.feed, data.display, false); // 에러발생
     console.log('offer in joined >>> ', offer); // 이게 안잡혀서 문제가 되고 있던 거
@@ -1026,8 +1031,10 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
 const itemsPerPage = 2;
 let currentPage = 1;
 
-function renderPage(pageNumber) {
-  console.log('allPeople in renderPage >>>>> ', allPeople); // 다른 인원들도 연동되야함..
+function renderPage(pageNumber, data) {
+  // joined 한 인원들의 정보를 이 안에서 사용할 수 있으면됨
+  console.log('allPeople in renderPage >>>>> ', allPeople);
+  console.log('joined에서 받아온 data >>>>> ', data);
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
@@ -1037,9 +1044,10 @@ function renderPage(pageNumber) {
   console.log('remoteContainers >>>>> ', remoteContainers);
   // remoteContainers가 비어 있는 경우 함수 종료
   if (remoteContainers.length === 0) {
+    // 이게 계속 도는걸 방지하기위해 위 return 해줘야함.
     return;
   } 
-  // 이게 계속 도는걸 방지하기위해 위 return 해줘야함.
+
   remoteContainers.forEach((container, index) => { 
     console.log('container in renderPage >>>>> ', container);
     if (index >= startIndex && index < endIndex) {
@@ -1056,10 +1064,7 @@ function renderPage(pageNumber) {
       
       // _update(`컨테이너의 오디오`, `컨테이너의 비디오`);
       container.style.display = 'none';
-      // container.style.display = 'none';
       // 아예 여기서 unsubscribe를 하든 끊어버리든 pause를 하든
-      // 화면만 불러오지마
-      // 오디오는 불러오고!
     }
   });
   
@@ -1095,7 +1100,7 @@ function renderPage(pageNumber) {
 
 // 이거 조차 실행이 안되고 있음.
 function setRemoteVideoElement(remoteStream, feed, display) {
-  console.log('setRemoteVideoElement 시작!') // 아예 카메라 없는게 동작도 안되는구나
+  console.log('setRemoteVideoElement 시작! >>> ', remoteStream) // 아예 카메라 없는게 동작도 안되는구나
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {

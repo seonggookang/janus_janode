@@ -910,25 +910,6 @@ class VideoRoomHandle extends Handle {
   }
 
   /**
-   * Leave a room.
-   * Can be used by both publishers and subscribers.
-   *
-   * @returns {Promise<module:videoroom-plugin~VIDEOROOM_EVENT_LEAVING>}
-   */
-  async leave() {
-    const body = {
-      request: REQUEST_LEAVE,
-    };
-
-    const response = await this.message(body);
-    const { event, data: evtdata } = response._janode || {};
-    if (event === PLUGIN_EVENT.LEAVING)
-      return evtdata;
-    const error = new Error(`unexpected response to ${body.request} request`);
-    throw (error);
-  }
-
-  /**
    * [multistream] Update a subscription.
    *
    * @param {object[]} subscribe - The array of streams to subscribe
@@ -948,6 +929,25 @@ class VideoRoomHandle extends Handle {
     if (event === PLUGIN_EVENT.UPDATED) {
       return evtdata;
     }
+    const error = new Error(`unexpected response to ${body.request} request`);
+    throw (error);
+  }
+
+  /**
+   * Leave a room.
+   * Can be used by both publishers and subscribers.
+   *
+   * @returns {Promise<module:videoroom-plugin~VIDEOROOM_EVENT_LEAVING>}
+   */
+  async leave() {
+    const body = {
+      request: REQUEST_LEAVE,
+    };
+
+    const response = await this.message(body);
+    const { event, data: evtdata } = response._janode || {};
+    if (event === PLUGIN_EVENT.LEAVING)
+      return evtdata;
     const error = new Error(`unexpected response to ${body.request} request`);
     throw (error);
   }

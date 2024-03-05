@@ -7,12 +7,13 @@ const RTCPeerConnection = (window.RTCPeerConnection || window.webkitRTCPeerConne
 
 const pcMap = new Map();
 let pendingOfferMap = new Map();
-var myRoom = getURLParameter('room') ? parseInt(getURLParameter('room')) : (getURLParameter('room_str') || 12345555555);
+var myRoom = getURLParameter('room') ? parseInt(getURLParameter('room')) : (getURLParameter('room_str') || 1234);
 const randName = ('John_Doe_' + Math.floor(10000 * Math.random()));
 const myName = getURLParameter('name') || randName;
 
 const button = document.getElementById('button');
 var localStream;
+let roomIWant;
 
 connect.onclick = () => {
   if (socket.connected) {
@@ -219,13 +220,14 @@ function join({ room = myRoom, display = myName, token = null }) {
 
 // 현재 화면에 노출된 peers --> 비디오 : O, 오디오 : O
 // 다른 페이지에 있는 peers --> 비디오 : X, 오디오 : O
-function subscribe({ feed, room = myRoom, substream, temporal }) {
+function subscribe({ feed, room = myRoom, offer_video=false, substream, temporal }) {
   
   // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
   
   const subscribeData = {
     room,
     feed,
+    offer_video,
   };
   console.log('subscribeData >>>>> ', subscribeData);
   if (typeof substream !== 'undefined') subscribeData.sc_substream_layer = substream;
@@ -238,7 +240,14 @@ function subscribe({ feed, room = myRoom, substream, temporal }) {
 }
 
 function subscribeTo(peers, room = myRoom) {
-  // 각각의 peer들마다 모두 subscribe는 하는 상태임.
+  const deepPeers = {...peers};
+  
+
+  allPeople.push(deepPeers);
+
+  // 여기에서 renderPage 함수를 써야 하지 않을까?
+
+  roomIWant = room;
   peers.forEach(({ feed }) => {
     subscribe({ feed, room });
   });
@@ -614,6 +623,7 @@ socket.on('videoroom-error', ({ error, _id }) => {
 });
 
 let allPeople = [];
+
 // data.publishers가 인식이 되면 됨
 // 'join'추적해서 data에 왜!!!!! publishers 안찍히는지 확인
 socket.on('joined', async ({ data }) => {
@@ -624,8 +634,8 @@ socket.on('joined', async ({ data }) => {
   
   // data 객체를 복사하여 새로운 객체를 생성하고 이를 allPeople 배열에 추가합니다.
   const newData = {...data};
-  console.log('newData.publishers in joined >>> ', newData.publishers); // 객체로 나옴.
-  allPeople.push(newData.publishers);
+  console.log('newData in joined >>> ', newData.publishers); // 새로 들어온 peer에서는 상대방이 나옴
+  // allPeople.push(newData.publishers);
   // console.log('allPeople in joined >>>>> ', allPeople);
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
@@ -634,11 +644,10 @@ socket.on('joined', async ({ data }) => {
   _listRooms(); 
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
   
-  // renderPage(null, newData);
+  // renderPage(null, newData.publishers);
 
   try {
     const offer = await doOffer(data.feed, data.display, false); // 에러발생
-    console.log('offer in joined >>> ', offer); // 이게 안잡혀서 문제가 되고 있던 거
     configure({ feed: data.feed, jsep: offer });
     subscribeTo(data.publishers, data.room); // 카메라가 없는거에 대해 data.publishers가 아예 인식이 안되는 상태
     // localStream이 없으니까 에러가 나는 중
@@ -683,18 +692,14 @@ socket.on('allowed', ({ data }) => {
 });
 
 socket.on('configured', async ({ data, _id }) => {
-  console.log('feed configured >>> ', data); // feed,jsep, room
-  console.log('data.jsep >>>>> ', data.jsep);
+  console.log('data in configured >>> ', data); // feed,jsep, room
   // 카메라가 있는 쪽 --> { type, sdp }
   // 카메라가 없는 쪽 --> undefined
-  console.log('_id', _id);
   pendingOfferMap.delete(_id);
   const pc = pcMap.get(data.feed);
-  console.log('pc >>>>>>>>>>> ', pc)
 
   // 카메라가 있을 때
   if (pc && data.jsep) {
-    console.log('카메라가 있으면 보이는 코드')
     try {
       await pc.setRemoteDescription(data.jsep);
       console.log('configure remote sdp OK');
@@ -828,7 +833,6 @@ async function _restartSubscriber(feed) {
 }
 
 async function doOffer(feed, display) {
-  console.log('내 자신에 대해 doOffer니까 카메라 유무 관계없이 나옴')
   if (!pcMap.has(feed)) {
     const pc = new RTCPeerConnection({
       'iceServers': [{
@@ -858,7 +862,8 @@ async function doOffer(feed, display) {
       // 1페이지에 있는 사람들(2명) : video : x, audio o
       // 2페이지에 있는 사람들(2명) : video : o, audio o
 
-    } catch (e) { // 여기는 카메라 자체가 없는 사람
+    } catch (e) {
+      console.log('카메라 자체가 없는 상황')
       // 예제: AudioContext를 사용하여 가상의 오디오 트랙 생성
       let audioContext = new AudioContext();
       console.log('audioContext >>> ', audioContext);
@@ -876,8 +881,7 @@ async function doOffer(feed, display) {
       // localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 
       // audio와 video에 대한 정보가 나의 위치를 알려주는 결정적인 요소?,
-
-      console.log('카메라 없다~~~')
+      
 
       // removeVideoElementByFeed(feed);
       // closePC(feed);
@@ -1031,10 +1035,12 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
 const itemsPerPage = 2;
 let currentPage = 1;
 
-function renderPage(pageNumber, data) {
+function renderPage(pageNumber) {
   // joined 한 인원들의 정보를 이 안에서 사용할 수 있으면됨
-  console.log('allPeople in renderPage >>>>> ', allPeople);
-  console.log('joined에서 받아온 data >>>>> ', data);
+  console.log('allPeople in renderPage >>>>> ', allPeople.slice(1)); // 들어온 각각의 것들이 나오고있음
+  // console.log('newDatas in renderPage >>>>> ', newDatas); // 들어온 각각의 것들이 나오고있음
+  console.log('roomIwant in renderPage >>>>> ', roomIWant); // 들어온 각각의 것들이 나오고있음
+
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
@@ -1048,24 +1054,17 @@ function renderPage(pageNumber, data) {
     return;
   } 
 
-  remoteContainers.forEach((container, index) => { 
-    console.log('container in renderPage >>>>> ', container);
-    if (index >= startIndex && index < endIndex) {
-      // update함수 해주면 좋을듯
-      // 현재페이지에 있는 것들 오디오 비디오 모두 subscribe
-      // console.log('내가 지금 보고 있는거')
-      // _update();
-      // _update(`컨테이너의 오디오 & 비디오', null`);
-      // _update(container, 'subscribe');
-      container.style.display = 'block';
-    } else {
-      
-      // 현재 페이지에 없는 것들은 오디오만 subscribe, 비디오 unsubscribe
-      
-      // _update(`컨테이너의 오디오`, `컨테이너의 비디오`);
-      container.style.display = 'none';
-      // 아예 여기서 unsubscribe를 하든 끊어버리든 pause를 하든
-    }
+  
+  allPeople.forEach((person, index) => {
+    const isCurrentPageItem = index >= startIndex && index < endIndex;
+    console.log('person >>> ', person[0]);
+    console.log('index >>> ', index);
+     // 현재 페이지 항목에 대해서는 offer_video를 true로, 나머지에 대해서는 false로 설정
+     subscribe({ feed: person[0].feed, roomIWant, offer_video: isCurrentPageItem });
+  })
+
+  remoteContainers.forEach((container, index) => {
+    container.style.display = index >= startIndex && index < endIndex ? 'block' : 'none';
   });
   
   

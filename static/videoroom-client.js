@@ -158,40 +158,6 @@ function destroy_room(room, desc) {
     }
 };
 
-// function join22(room, desc, participant) {
-//   console.log('participant >>> ', participant);
-//   var display_name = $('#display_name').val();
-//   if (display_name == '') {
-//     alert('참석할 이름을 입력해야 합니다.');
-//     return;
-//   }
-//   console.log('room >>> ', room);
-  
-//   let videosElement = document.getElementById('videos');
-//   console.log('videosElement >>> ', videosElement);
-//   setTimeout(() => {
-//     let firstSpan = videosElement.querySelector('span');
-//     console.log('firstSpan >>> ', firstSpan);
-    
-//     setTimeout(() => {
-//       let innerHTML = firstSpan.innerHTML;
-//       console.log('innerHTML >>> ', innerHTML);
-//       let match = innerHTML.match(/\((\d+)\s*,/);
-//       console.log('match >>> ', match);
-//       if (match) {
-//         let extractedNumber = +match[1];
-//         console.log('extractedNumber >>> ', extractedNumber);
-//         if ( extractedNumber === room ) {
-//           alert(`Already exist. You can't join`);
-//         } else {
-//           join({room: room, display:display_name, token:null});
-//         }
-//       } else { // -- LOCALS -- 일 때 실행되는거 >> 최초 1회 시행.
-//         join({room: room, display:display_name, token:null});
-//       }
-//     }, 5);
-//   }, 0);
-// }
 function join22(room, desc, totalParticipants) {
   var display_name = $('#display_name').val();
   if (display_name == '') {
@@ -220,7 +186,7 @@ function join({ room = myRoom, display = myName, token = null }) {
 
 // 현재 화면에 노출된 peers --> 비디오 : O, 오디오 : O
 // 다른 페이지에 있는 peers --> 비디오 : X, 오디오 : O
-function subscribe({ feed, room = myRoom, offer_video=false, substream, temporal }) {
+function subscribe({ feed, room = myRoom, offer_video, substream, temporal }) {
   
   // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
   
@@ -244,12 +210,20 @@ function subscribeTo(peers, room = myRoom) {
   // peers.forEach(({ feed }) => { // 이 peers의 갯수를 조절해야겠네. 2개까지는 offer_video를 true, 나머지는 false
   //   subscribe({ feed, room }); // 이 3번째 인자로 뭔가 처리를 해줘야함
   // });
-  console.log('peers >>>> ', peers)
-  peers.forEach(({ feed }, itemsPerPage) => {
-    console.log('itemsPerPage >>> ', itemsPerPage);
-    let varvar = itemsPerPage < 1; // 배열의 인덱스가 2 미만이면 true, 아니면 false
-    console.log('varvar >>> ', varvar);
-    subscribe({ feed, room, offer_video:varvar }); // 수정된 부분: varvar를 인자로 추가
+  const deepPeers = {...peers};
+  allPeople.push(deepPeers);
+  console.log('peers in subscribeTo >>> ', peers);
+  console.log('allPeople.slice(1) in subscribeTo >>> ', allPeople.slice(1));
+  roomIWant = room;
+
+  
+  // peers가 빈 값으로 나오는 중이네..???
+  peers.forEach(({ feed }, index) => {
+    console.log('index in peers >>> ', index);
+    let isShow = index < itemsPerPage; // 배열의 인덱스가 2 미만이면 true, 아니면 false
+    subscribe({ feed, room, offer_video:isShow }); // 수정된 부분: varvar를 인자로 추가
+    // 이 떄마다 renderPage를 또 해주면 될 듯?
+    renderPage(1);
   });
 }
 
@@ -264,8 +238,7 @@ function trickle({ feed, candidate }) {
   });
 }
 
-// jsep가 뭔가 기본 디폴트로 돌아가는게 없나? ㅋㅋ
-function configure({ feed, jsep , restart, substream, temporal }) {
+function configure({ feed, jsep, restart, substream, temporal }) {
 
   const configureData = {
     feed,
@@ -623,20 +596,10 @@ socket.on('videoroom-error', ({ error, _id }) => {
 });
 
 let allPeople = [];
-
+let offerCopy;
 // data.publishers가 인식이 되면 됨
 // 'join'추적해서 data에 왜!!!!! publishers 안찍히는지 확인
 socket.on('joined', async ({ data }) => {
-  
-  // 다른 사람이 조인할 때는 이게 실행이 안되니까.
-  console.log('data in joined >>>>> ', data);
-  console.log('data.publishers in joined >>>>> ', data.publishers);
-  
-  // data 객체를 복사하여 새로운 객체를 생성하고 이를 allPeople 배열에 추가합니다.
-  const newData = {...data};
-  console.log('newData in joined >>> ', newData.publishers); // 새로 들어온 peer에서는 상대방이 나옴
-  // allPeople.push(newData.publishers);
-  // console.log('allPeople in joined >>>>> ', allPeople);
   $('#local_feed').text(data.feed);
   $('#private_id').text(data.private_id);
   $('#curr_room_name').val(data.description);
@@ -644,10 +607,11 @@ socket.on('joined', async ({ data }) => {
   _listRooms(); 
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
   
-  // renderPage(null, newData.publishers);
+  // renderPage(1);
 
   try {
     const offer = await doOffer(data.feed, data.display, false); // 에러발생
+    offerCopy = offer;
     configure({ feed: data.feed, jsep: offer });
     subscribeTo(data.publishers, data.room); // 카메라가 없는거에 대해 data.publishers가 아예 인식이 안되는 상태
     // localStream이 없으니까 에러가 나는 중
@@ -690,7 +654,7 @@ socket.on('kicked', ({ data }) => {
 socket.on('allowed', ({ data }) => {
   console.log('token management', data);
 });
-
+let answerCopy;
 socket.on('configured', async ({ data, _id }) => {
   console.log('data in configured >>> ', data); // feed,jsep, room
   // 카메라가 있는 쪽 --> { type, sdp }
@@ -705,6 +669,7 @@ socket.on('configured', async ({ data, _id }) => {
       console.log('configure remote sdp OK');
       if (data.jsep.type === 'offer') {
         const answer = await doAnswer(data.feed, null, data.jsep);
+        answerCopy = answer;
         start(data.feed, answer);
       }
     } catch (e) {
@@ -840,7 +805,10 @@ async function doOffer(feed, display) {
       }],
     });
     pc.onnegotiationneeded = event => console.log('pc.onnegotiationneeded >>> ', event);
-    pc.onicecandidate = event => trickle({ feed, candidate: event.candidate });
+    pc.onicecandidate = event => {
+      console.log('trickle event >>>', event);
+      trickle({ feed, candidate: event.candidate })
+    };
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
         removeVideoElementByFeed(feed);
@@ -848,7 +816,7 @@ async function doOffer(feed, display) {
       }
     };
     /* This one below should not be fired, cause the PC is used just to send */
-    pc.ontrack = event => console.log('pc.ontrack', event);
+    pc.ontrack = event => console.log('pc.ontrack in doOffer >>> ', event);
 
     pcMap.set(feed, pc);
 
@@ -915,8 +883,6 @@ async function doOffer(feed, display) {
 }
 
 async function doAnswer(feed, display, offer) {
-  console.log('상대가 카메라가 없으면 이것도 출력 안됨. 그 말은 doAnswer함수실행이 안되고 있다는 것 !')
-  // 카메라가 없는건 감지가 안됨
   if (!pcMap.has(feed)) {
     const pc = new RTCPeerConnection({
       'iceServers': [{
@@ -933,7 +899,7 @@ async function doAnswer(feed, display, offer) {
       }
     };
     pc.ontrack = event => {
-      console.log('pc.ontrack >>> ', event);
+      console.log('pc.ontrack in doAnswer >>> ', event);
 
       event.track.onunmute = evt => {
         console.log('track.onunmute', evt);
@@ -1032,7 +998,7 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 3;
+const itemsPerPage = 1;
 let currentPage = 1;
 
 function renderPage(pageNumber) {
@@ -1041,26 +1007,52 @@ function renderPage(pageNumber) {
   const remoteContainers = document.querySelectorAll('#remotes > div');
   const paginationContainer = document.getElementById('js-pagination');
   paginationContainer.innerHTML = '';
-
   
+  const arraysPeople = [...allPeople];
+  const extractedRemote = arraysPeople.slice(1) // remote Peers 정보들
+  console.log('extractedRemote in renderPage >>>>> ', extractedRemote)
+  console.log('extractedRemote Number >>>>> ', extractedRemote.length)
+
   // remoteContainers가 비어 있는 경우 함수 종료
   if (remoteContainers.length === 0) {
     return;
-  } 
-  console.log('allPeople in renderPage >>>>> ', allPeople)
-  
+  }
 
+  console.log('offerCopy in renderPage >>> ', offerCopy); // joined에서 받은 offer랑 동일
+  console.log('offerCopy.type >>> ', offerCopy.type); // type: offer
+  console.log('answerCopy >>> ', answerCopy)
 
-  
-  const start = (pageNumber - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  const currentPageItems = allPeople.slice(start, end);
+  extractedRemote.forEach((person, index) => {
+    const isCurrentPageItem = index >= startIndex && index < endIndex;
+    console.log('isCurrentPageItem >>> ', isCurrentPageItem); // 0, 1에서만 true, 나머지 false
+    console.log('person[0] >>> ', person[0]); // 상대방이 나옴
+     // 현재 페이지 항목에 대해서는 offer_video: true로, 나머지: false로 설정
 
+     // "did we offer" 라는 에러가 뜬다. 그래서 doOffer를 해줘야 한다.
+     // 여기에 await을 해줘야 기다렸다가 offer가 받아지고 나서 configure에 넣어주지. 비동기 처리니까!
+     // 그럼 위에다가 async를 해야함
+    //  const offer = doOffer(person[0].feed, person[0].display)
+    // 근데 이 offer를 새로 만들게 아니라 만들었던 거에서 가져오면 된다 생각해서 offerCopy라는 거에 가져온다.
+    console.log('offerCopy22222 >>> ', offerCopy); // joined에서 받은 offer랑 동일
+    // "did we offer ? " error 
+    //  configure({ feed: person[0].feed, jsep: offerCopy }); // 되는 듯?
+     // 이 위의것을 기존 'joined'에서 하던걸 여기서도 해봤더니 ICE locally error 떴다!
+     // 즉, socket.on 안에서만 가능하다는 뜻 같은데...
+    // await pc.setRemoteDescription(data.jsep);
+    
+    // console.log('configure remote sdp OK');
+    // if (data.jsep.type === 'offer') {
+      // const answer = await doAnswer(data.feed, null, data.jsep);
+      // start(data.feed, answer);
+    // }
+
+    subscribe({ feed: person[0].feed, roomIWant, offer_video: isCurrentPageItem });
+  })
   
-  currentPageItems.forEach(({ feed }, items) => { 
-    let show = items < 1; // 배열의 인덱스가 2 미만이면 true, 아니면 false
-    subscribe({ feed, room, offer_video:show }); // 수정된 부분: varvar를 인자로 추가
-  });
+  // currentPageItems.forEach(({ feed }, items) => { 
+  //   let show = items < 2; // 배열의 인덱스가 2 미만이면 true, 아니면 false
+  //   subscribe({ feed, room, offer_video:show }); // 수정된 부분: varvar를 인자로 추가
+  // });
 
   remoteContainers.forEach((container, index) => {
     container.style.display = index >= startIndex && index < endIndex ? 'block' : 'none';

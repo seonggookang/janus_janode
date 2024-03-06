@@ -155,7 +155,7 @@ function initFrontEnd() {
     socket.on('join', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} join received`);
       const { _id, data: joindata = {} } = evtdata;
-
+      console.log('joindata >>> ', joindata);
       if (!checkSessions(janodeSession, true, socket, evtdata)) return;
 
       let pubHandle;
@@ -220,7 +220,7 @@ function initFrontEnd() {
         pubHandle.on(Janode.EVENT.HANDLE_TRICKLE, evtdata => Logger.info(`${LOG_NS} ${pubHandle.name} trickle event ${JSON.stringify(evtdata)}`));
 
         const response = await pubHandle.joinPublisher(joindata);
-
+        console.log('response in join >>> ', response);
         replyEvent(socket, 'joined', response, _id);
 
         Logger.info(`${LOG_NS} ${remote} joined sent`);
@@ -233,7 +233,6 @@ function initFrontEnd() {
     socket.on('subscribe', async (evtdata = {}) => {
       Logger.info(`${LOG_NS} ${remote} subscribe received`);
       const { _id, data: joindata = {} } = evtdata;
-
       if (!checkSessions(janodeSession, true, socket, evtdata)) return;
 
       let subHandle;
@@ -289,16 +288,12 @@ function initFrontEnd() {
       const { _id, data: confdata = {} } = evtdata;
       console.log('evtdata in configure >>>', evtdata);
       
-      
-      console.log('confdata >>>>> ', confdata); // feed, bitrate 2개 객체로 나옴.
       const handle = clientHandles.getHandleByFeed(confdata.feed);
-      console.log('handle >>>>> ', handle); // undefined
       
       if (!checkSessions(janodeSession, handle, socket, evtdata)) return;
       
       try {
         const response = await handle.configure(confdata);
-        console.log('response 11 >>>>> ', response); // 아무것도 안나온다..
         delete response.configured;
         replyEvent(socket, 'configured', response, _id);
         Logger.info(`${LOG_NS} ${remote} configured sent`);

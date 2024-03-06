@@ -239,17 +239,17 @@ function subscribe({ feed, room = myRoom, offer_video=false, substream, temporal
   });
 }
 
+// 내가 원하는 값 itemsPerPage에 따라 subscribe의 갯수를 정해야 함
 function subscribeTo(peers, room = myRoom) {
-  const deepPeers = {...peers};
-  
-
-  allPeople.push(deepPeers);
-
-  // 여기에서 renderPage 함수를 써야 하지 않을까?
-
-  roomIWant = room;
-  peers.forEach(({ feed }) => {
-    subscribe({ feed, room });
+  // peers.forEach(({ feed }) => { // 이 peers의 갯수를 조절해야겠네. 2개까지는 offer_video를 true, 나머지는 false
+  //   subscribe({ feed, room }); // 이 3번째 인자로 뭔가 처리를 해줘야함
+  // });
+  console.log('peers >>>> ', peers)
+  peers.forEach(({ feed }, itemsPerPage) => {
+    console.log('itemsPerPage >>> ', itemsPerPage);
+    let varvar = itemsPerPage < 1; // 배열의 인덱스가 2 미만이면 true, 아니면 false
+    console.log('varvar >>> ', varvar);
+    subscribe({ feed, room, offer_video:varvar }); // 수정된 부분: varvar를 인자로 추가
   });
 }
 
@@ -1032,36 +1032,35 @@ document.getElementById('js-pagination').addEventListener('click', (event) => {
   }
 });
 
-const itemsPerPage = 2;
+const itemsPerPage = 3;
 let currentPage = 1;
 
 function renderPage(pageNumber) {
-  // joined 한 인원들의 정보를 이 안에서 사용할 수 있으면됨
-  console.log('allPeople in renderPage >>>>> ', allPeople.slice(1)); // 들어온 각각의 것들이 나오고있음
-  // console.log('newDatas in renderPage >>>>> ', newDatas); // 들어온 각각의 것들이 나오고있음
-  console.log('roomIwant in renderPage >>>>> ', roomIWant); // 들어온 각각의 것들이 나오고있음
-
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
   const paginationContainer = document.getElementById('js-pagination');
   paginationContainer.innerHTML = '';
 
-  console.log('remoteContainers >>>>> ', remoteContainers);
+  
   // remoteContainers가 비어 있는 경우 함수 종료
   if (remoteContainers.length === 0) {
-    // 이게 계속 도는걸 방지하기위해 위 return 해줘야함.
     return;
   } 
+  console.log('allPeople in renderPage >>>>> ', allPeople)
+  
+
 
   
-  allPeople.forEach((person, index) => {
-    const isCurrentPageItem = index >= startIndex && index < endIndex;
-    console.log('person >>> ', person[0]);
-    console.log('index >>> ', index);
-     // 현재 페이지 항목에 대해서는 offer_video를 true로, 나머지에 대해서는 false로 설정
-     subscribe({ feed: person[0].feed, roomIWant, offer_video: isCurrentPageItem });
-  })
+  const start = (pageNumber - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const currentPageItems = allPeople.slice(start, end);
+
+  
+  currentPageItems.forEach(({ feed }, items) => { 
+    let show = items < 1; // 배열의 인덱스가 2 미만이면 true, 아니면 false
+    subscribe({ feed, room, offer_video:show }); // 수정된 부분: varvar를 인자로 추가
+  });
 
   remoteContainers.forEach((container, index) => {
     container.style.display = index >= startIndex && index < endIndex ? 'block' : 'none';

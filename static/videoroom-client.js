@@ -806,7 +806,6 @@ async function doOffer(feed, display) {
     });
     pc.onnegotiationneeded = event => console.log('pc.onnegotiationneeded >>> ', event);
     pc.onicecandidate = event => {
-      console.log('trickle event >>>', event);
       trickle({ feed, candidate: event.candidate })
     };
     pc.oniceconnectionstatechange = () => {
@@ -1031,9 +1030,9 @@ function renderPage(pageNumber) {
      // "did we offer" 라는 에러가 뜬다. 그래서 doOffer를 해줘야 한다.
      // 여기에 await을 해줘야 기다렸다가 offer가 받아지고 나서 configure에 넣어주지. 비동기 처리니까!
      // 그럼 위에다가 async를 해야함
-    //  const offer = doOffer(person[0].feed, person[0].display)
+    //  const offer = doOffer(person[0].feed, person[0].display) <<-- 이렇게 새로 생성할게 아니라 가져오자.
     // 근데 이 offer를 새로 만들게 아니라 만들었던 거에서 가져오면 된다 생각해서 offerCopy라는 거에 가져온다.
-    console.log('offerCopy22222 >>> ', offerCopy); // joined에서 받은 offer랑 동일
+    console.log('offerCopy22222 >>> ', offerCopy); // joined에서 받은 offer랑 동일 !!!
     // "did we offer ? " error 
     //  configure({ feed: person[0].feed, jsep: offerCopy }); // 되는 듯?
      // 이 위의것을 기존 'joined'에서 하던걸 여기서도 해봤더니 ICE locally error 떴다!
@@ -1088,7 +1087,6 @@ function renderPage(pageNumber) {
   } 
 }
 
-// 이거 조차 실행이 안되고 있음.
 function setRemoteVideoElement(remoteStream, feed, display) {
   console.log('setRemoteVideoElement 시작! >>> ', remoteStream) // 아예 카메라 없는게 동작도 안되는구나
   if (!feed) return;
@@ -1099,7 +1097,8 @@ function setRemoteVideoElement(remoteStream, feed, display) {
     nameElem.style.display = 'table';
 
     let FinalElem;
-    if (remoteStream.getTracks().length === 2) { // 상대 카메라 있을 때
+    // if (remoteStream.getTracks().length === 2) { // 상대 카메라 있을 때
+    if (remoteStream) {
       const remoteVideoStreamElem = document.createElement('video');
       remoteVideoStreamElem.width = 320;
       remoteVideoStreamElem.height = 240;
@@ -1107,18 +1106,27 @@ function setRemoteVideoElement(remoteStream, feed, display) {
       remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
       remoteVideoStreamElem.srcObject = remoteStream;
       FinalElem = remoteVideoStreamElem;
-    } else {  // 상대 카메라 없을 때
-      const blackScreenElem = document.createElement('div');
-      blackScreenElem.style.width = '320px';
-      blackScreenElem.style.height = '240px';
-      blackScreenElem.style.backgroundColor = 'black';
-      blackScreenElem.classList.add('black-screen');
+    } 
+    // if (remoteStream.getTracks().length === 2) { // 상대 카메라 있을 때
+    //   const remoteVideoStreamElem = document.createElement('video');
+    //   remoteVideoStreamElem.width = 320;
+    //   remoteVideoStreamElem.height = 240;
+    //   remoteVideoStreamElem.autoplay = true;
+    //   remoteVideoStreamElem.style.cssText = '-moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); transform: scale(-1, 1); filter: FlipH;';
+    //   remoteVideoStreamElem.srcObject = remoteStream;
+    //   FinalElem = remoteVideoStreamElem;
+    // } else {  // 상대 카메라 없을 때
+    //   const blackScreenElem = document.createElement('div');
+    //   blackScreenElem.style.width = '320px';
+    //   blackScreenElem.style.height = '240px';
+    //   blackScreenElem.style.backgroundColor = 'black';
+    //   blackScreenElem.classList.add('black-screen');
       
-      const textElem = document.createElement('div');
-      textElem.innerText = 'No Camera';
-      blackScreenElem.appendChild(textElem);
-      FinalElem = blackScreenElem;   
-    }
+    //   const textElem = document.createElement('div');
+    //   textElem.innerText = 'No Camera';
+    //   blackScreenElem.appendChild(textElem);
+    //   FinalElem = blackScreenElem;   
+    // }
 
     const remoteVideoContainer = document.createElement('div');
     remoteVideoContainer.id = 'video_' + feed;

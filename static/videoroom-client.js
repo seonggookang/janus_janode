@@ -186,7 +186,7 @@ function join({ room = myRoom, display = myName, token = null }) {
 
 // 현재 화면에 노출된 peers --> 비디오 : O, 오디오 : O
 // 다른 페이지에 있는 peers --> 비디오 : X, 오디오 : O
-function subscribe({ feed, room = myRoom, offer_video, substream, temporal }) {
+function subscribe({ feed, room = myRoom, offer_video=false, substream, temporal }) {
   // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
   const subscribeData = {
     room,
@@ -1030,7 +1030,7 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
   }
 }
 
-const itemsPerPage = 3;
+const itemsPerPage = 1;
 let currentPage = 1;
 
 // 페이지 네이션 버튼 클릭
@@ -1104,7 +1104,8 @@ function renderPage(pageNumber) {
   // });
 
   remoteContainers.forEach((container, index) => {
-    container.style.display = index >= startIndex && index < endIndex ? 'block' : 'none';
+    container.style.display = 'block'; // 테스트 위해 일단 다 보이게 하고 나중에 아래거로 대체예정.
+    // container.style.display = index >= startIndex && index < endIndex ? 'block' : 'none';
   });
   
   

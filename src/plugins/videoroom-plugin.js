@@ -212,6 +212,13 @@ class VideoRoomHandle extends Handle {
           /* [multistream] add streams info to the subscriber joined event */
           if (typeof message_data.streams !== 'undefined') janode_event.data.streams = message_data.streams;
           janode_event.event = PLUGIN_EVENT.SUB_JOINED;
+
+          /// --- 추가한 줄 ---
+          // console.log("attached===>", room, message_data.streams[0].feed_id);
+          // this.room = room;
+          // this.feed = message_data.streams[0].feed_id;  //message_data.id
+          /// --- 추가한 줄 ---
+          
           break;
 
         /* Slow-link event */

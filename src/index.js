@@ -520,16 +520,16 @@ function initFrontEnd() {
     socket.on('update', async (evtdata = {}) => { // emit 만드는
       Logger.info(`${LOG_NS} ${remote} update received`);
       console.log('evtdata in update >>> ', evtdata);
-      const { _id, data: destroydata = {} } = evtdata;
+      const { _id, data: updateData = {} } = evtdata;
       
       if (!checkSessions(janodeSession, janodeManagerHandle, socket, evtdata)) return;
 
       try {
-        const response = await janodeManagerHandle.update(destroydata);
+        const response = await janodeManagerHandle.update(updateData);
         replyEvent(socket, 'updated', response, _id); // 이거에 대해 만들어야함
         Logger.info(`${LOG_NS} ${remote} destroyed sent`);
       } catch ({ message }) {
-        replyError(socket, message, destroydata, _id);
+        replyError(socket, message, updateData, _id);
       }
     });
 

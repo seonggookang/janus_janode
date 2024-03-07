@@ -187,9 +187,7 @@ function join({ room = myRoom, display = myName, token = null }) {
 // 현재 화면에 노출된 peers --> 비디오 : O, 오디오 : O
 // 다른 페이지에 있는 peers --> 비디오 : X, 오디오 : O
 function subscribe({ feed, room = myRoom, offer_video, substream, temporal }) {
-  
   // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
-  
   const subscribeData = {
     room,
     feed,
@@ -206,25 +204,67 @@ function subscribe({ feed, room = myRoom, offer_video, substream, temporal }) {
 }
 
 // 내가 원하는 값 itemsPerPage에 따라 subscribe의 갯수를 정해야 함
-function subscribeTo(peers, room = myRoom) {
-  // peers.forEach(({ feed }) => { // 이 peers의 갯수를 조절해야겠네. 2개까지는 offer_video를 true, 나머지는 false
-  //   subscribe({ feed, room }); // 이 3번째 인자로 뭔가 처리를 해줘야함
-  // });
-  const deepPeers = {...peers};
-  allPeople.push(deepPeers);
-  console.log('peers in subscribeTo >>> ', peers);
-  console.log('allPeople.slice(1) in subscribeTo >>> ', allPeople.slice(1));
-  roomIWant = room;
+// function subscribeTo(peers, room = myRoom) {
+//   // peers.forEach(({ feed }) => { // 이 peers의 갯수를 조절해야겠네. 2개까지는 offer_video를 true, 나머지는 false
+//   //   subscribe({ feed, room }); // 이 3번째 인자로 뭔가 처리를 해줘야함
+//   // });
+//   const deepPeers = {...peers};
+//   allPeople.push(deepPeers);
+//   console.log('peers in subscribeTo >>> ', peers);
+//   console.log('allPeople.slice(1) in subscribeTo >>> ', allPeople.slice(1));
+
 
   
-  // peers가 빈 값으로 나오는 중이네..???
-  peers.forEach(({ feed }, index) => {
-    console.log('index in peers >>> ', index);
-    let isShow = index < itemsPerPage; // 배열의 인덱스가 2 미만이면 true, 아니면 false
-    subscribe({ feed, room, offer_video:isShow }); // 수정된 부분: varvar를 인자로 추가
-    // 이 떄마다 renderPage를 또 해주면 될 듯?
-    renderPage(1);
+//   // peers가 빈 값으로 나오는 중이네..???
+//   peers.forEach(({ feed }, index) => {
+//     console.log('index in peers >>> ', index);
+//     let isShow = index < itemsPerPage; // 배열의 인덱스가 2 미만이면 true, 아니면 false
+//     subscribe({ feed, room, offer_video:isShow }); // 수정된 부분: varvar를 인자로 추가
+//     // 이 떄마다 renderPage를 또 해주면 될 듯?
+//     renderPage(1);
+//   });
+// }
+
+function subscribeTo(peer, room = myRoom) {
+  console.log('peer in subscribeTo >>>> ', peer) // 1명건데 배열의 형태.
+  console.log('pendingOfferMap in subscribeTo >>> ', pendingOfferMap);
+  roomIWant = room;  
+  allPeople.push(...peer); // syntax error 
+  // const deepPeers = [...peers];
+  // console.log('deepPeers >>>> ', deepPeers) 
+  // allPeople.push(deepPeers);
+  // console.log('allPeople >>>> ', allPeople) 
+  // const extractedRemote = allPeople.slice(1)[0] // remote Peers 정보들
+  // console.log('extractedRemote[0] >>>> ', extractedRemote[0]) 
+  // renderPage();
+  
+  peer.forEach(({ feed }) => { // 이 peers의 갯수를 조절해야겠네. 2개까지는 offer_video를 true, 나머지는 false
+    subscribe({ feed, room}); // 이 3번째 인자로 뭔가 처리를 해줘야함
   });
+}
+
+function subscribeTo2(index, feed, room, offer_video) {
+  console.log('index 222 >>> ', index);
+  console.log('peer 222 >>> ', feed);
+  console.log('room 222 >>> ', room);
+  console.log('offer_video 222 >>> ', offer_video);
+  
+  // roomIWant = room;  
+  // allPeople.push(...peer); // syntax error 
+  // const deepPeers = [...peers];
+  // console.log('deepPeers >>>> ', deepPeers) 
+  // allPeople.push(deepPeers);
+  // console.log('allPeople >>>> ', allPeople) 
+  // const extractedRemote = allPeople.slice(1)[0] // remote Peers 정보들
+  // console.log('extractedRemote[0] >>>> ', extractedRemote[0]) 
+  // renderPage();
+  console.log('offerCopy22222 >>> ', offerCopy); // joined에서 받은 offer랑 동일 !!!
+  console.log('index 의 feed, offer_video >>> ', index.feed, index.offer_video);
+  subscribe({ feed, room, offer_video }); // 이 3번째 인자로 뭔가 처리를 해줘야함
+  // peer.forEach(({ feed }) => { // 이 peers의 갯수를 조절해야겠네. 2개까지는 offer_video를 true, 나머지는 false
+  //   console.log('안녕 나 또왔쪙')
+  //   subscribe({ feed, room, offer_video : true }); // 이 3번째 인자로 뭔가 처리를 해줘야함
+  // });
 }
 
 function trickle({ feed, candidate }) {
@@ -258,9 +298,7 @@ function configure({ feed, jsep, restart, substream, temporal }) {
     _id: configId,
   });
 
-  // if (jsep) pendingOfferMap.set(configId, { feed });
-  pendingOfferMap.set(configId, { feed });
-  console.log('pendingOfferMap >>> ' ,pendingOfferMap);
+  if (jsep) pendingOfferMap.set(configId, { feed });
 }
 
 function configure_bitrate_audio_video(mode) {
@@ -359,7 +397,7 @@ function _leaveAll({ feed }) {
     feed,
   };
 
-  console.log(leaveData);
+  console.log('leaveData', leaveData);
   socket.emit('leaveAll', {
     data: leaveData,
     _id: getId(),
@@ -608,7 +646,9 @@ socket.on('joined', async ({ data }) => {
   setLocalVideoElement(null, null, null, data.room, data.description); // description 추가함. 스크린 위에 표시하기 위해.
   
   // renderPage(1);
-
+  // 방에 이미 있던 유저들 --> data.publishers
+  console.log('data.publishers >>> ', data.publishers);
+  
   try {
     const offer = await doOffer(data.feed, data.display, false); // 에러발생
     offerCopy = offer;
@@ -620,13 +660,12 @@ socket.on('joined', async ({ data }) => {
     // var vidTrack = localStream.getAudioTracks();
     // vidTrack.forEach(track => track.enabled = true);
   } catch (e) {
-    console.log('조인할 때 에러생김!! error while doing offer >>> ', e);
+    console.log('조인할 때 에러!! error while doing offer >>> ', e);
   }
 });
 
 socket.on('subscribed', async ({ data }) => {
-  console.log('subscribed : 상대 카메라 없으면 이것도 안함');
-  console.log('subscribed to feed', data);
+  console.log('subscribed to feed >>> ', data);
 
   try {
     const answer = await doAnswer(data.feed, data.display, data.jsep);
@@ -717,6 +756,7 @@ socket.on('started', ({ data }) => {
 socket.on('paused', ({ data }) => {
   console.log('feed paused', data);
 });
+
 
 socket.on('switched', ({ data }) => {
   console.log(`feed switched from ${data.from_feed} to ${data.to_feed} (${data.display})`);
@@ -912,8 +952,8 @@ async function doAnswer(feed, display, offer) {
       };
 
       const remoteStream = event.streams[0];
-      // 지금 여기까지도 안 오는 듯.
-      console.log('remoteStream in doAnswer >>>>> ', remoteStream.getTracks().length);
+      console.log('remoteStream in doAnswer >>> ', remoteStream);
+      // 몇 번째 유저인지 체크를 renderPage에서도 하고 여기서도 하고????
       setRemoteVideoElement(remoteStream, feed, display); // 이거로 인해 시작됨
       
     };
@@ -990,27 +1030,28 @@ function setLocalVideoElement(localStream, feed, display, room, description) {
   }
 }
 
+const itemsPerPage = 3;
+let currentPage = 1;
+
+// 페이지 네이션 버튼 클릭
 document.getElementById('js-pagination').addEventListener('click', (event) => {
+  pendingOfferMap.clear();
   if (event.target.tagName === 'BUTTON') {
     currentPage = parseInt(event.target.textContent);
     renderPage(currentPage);
   }
 });
 
-const itemsPerPage = 1;
-let currentPage = 1;
-
 function renderPage(pageNumber) {
+  pendingOfferMap.clear(); // 이거든 pendingOfferMap delete든 사용. 내가 보고 있는 페이지 아닌것들에 대해서,
   const startIndex = (pageNumber - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const remoteContainers = document.querySelectorAll('#remotes > div');
   const paginationContainer = document.getElementById('js-pagination');
   paginationContainer.innerHTML = '';
   
-  const arraysPeople = [...allPeople];
-  const extractedRemote = arraysPeople.slice(1) // remote Peers 정보들
-  console.log('extractedRemote in renderPage >>>>> ', extractedRemote)
-  console.log('extractedRemote Number >>>>> ', extractedRemote.length)
+  console.log('allPeople in renderPage >>>>> ', allPeople)
+  
 
   // remoteContainers가 비어 있는 경우 함수 종료
   if (remoteContainers.length === 0) {
@@ -1018,23 +1059,30 @@ function renderPage(pageNumber) {
   }
 
   console.log('offerCopy in renderPage >>> ', offerCopy); // joined에서 받은 offer랑 동일
-  console.log('offerCopy.type >>> ', offerCopy.type); // type: offer
   console.log('answerCopy >>> ', answerCopy)
-
-  extractedRemote.forEach((person, index) => {
+  
+  // 참여한 remote 사람들의 정보와 인덱스를 이용해서, 아래의 로직을 만드는 중
+  // 내가 보고 있는 페이지의 사람이라면 offer_video = true,
+  // 다른 페이지의 사람이라면 offer_video = false,
+  // 근데 extractedRemotePeer 이게 안 잡힘
+  allPeople.forEach((person, index) => {
     const isCurrentPageItem = index >= startIndex && index < endIndex;
-    console.log('isCurrentPageItem >>> ', isCurrentPageItem); // 0, 1에서만 true, 나머지 false
-    console.log('person[0] >>> ', person[0]); // 상대방이 나옴
+    const shouldOfferVideo = isCurrentPageItem && (index - startIndex) < 2;
+    pendingOfferMap.clear(); 
+    
+    console.log("--------------------------------------------------------")
+    console.log('isCurrentPageItem >>> ', index, isCurrentPageItem); // 0, 1에서만 true, 나머지 false
+    console.log('shouldOfferVideo >>> ', index, shouldOfferVideo);
+    console.log('person >>> ', person); // 상대방이 나옴
+    console.log("--------------------------------------------------------")
      // 현재 페이지 항목에 대해서는 offer_video: true로, 나머지: false로 설정
 
-     // "did we offer" 라는 에러가 뜬다. 그래서 doOffer를 해줘야 한다.
-     // 여기에 await을 해줘야 기다렸다가 offer가 받아지고 나서 configure에 넣어주지. 비동기 처리니까!
-     // 그럼 위에다가 async를 해야함
-    //  const offer = doOffer(person[0].feed, person[0].display) <<-- 이렇게 새로 생성할게 아니라 가져오자.
-    // 근데 이 offer를 새로 만들게 아니라 만들었던 거에서 가져오면 된다 생각해서 offerCopy라는 거에 가져온다.
-    console.log('offerCopy22222 >>> ', offerCopy); // joined에서 받은 offer랑 동일 !!!
+    // "did we offer" 라는 에러가 뜬다. 그래서 doOffer를 해줘야 한다.
+    // 여기에 await을 해줘야 기다렸다가 offer가 받아지고 나서 configure에 넣어주지. 비동기 처리니까!
+    // 그럼 위에다가 async를 해야함
     // "did we offer ? " error 
-    //  configure({ feed: person[0].feed, jsep: offerCopy }); // 되는 듯?
+    console.log('offerCopy in allPeople >>> ', offerCopy); // joined에서 받은 offer랑 동일 !!!
+    // configure({ feed: person.feed, jsep: offerCopy }); // 되는 듯?
      // 이 위의것을 기존 'joined'에서 하던걸 여기서도 해봤더니 ICE locally error 떴다!
      // 즉, socket.on 안에서만 가능하다는 뜻 같은데...
     // await pc.setRemoteDescription(data.jsep);
@@ -1045,7 +1093,9 @@ function renderPage(pageNumber) {
       // start(data.feed, answer);
     // }
 
-    subscribe({ feed: person[0].feed, roomIWant, offer_video: isCurrentPageItem });
+    // subscribe({ feed: person.feed, roomIWant, offer_video: shouldOfferVideo });
+    // 아 여기서 배열을 벗겨버렸구나
+    // subscribeTo2( index, person.feed, roomIWant, shouldOfferVideo ); // 각 
   })
   
   // currentPageItems.forEach(({ feed }, items) => { 
@@ -1089,6 +1139,7 @@ function renderPage(pageNumber) {
 
 function setRemoteVideoElement(remoteStream, feed, display) {
   console.log('setRemoteVideoElement 시작! >>> ', remoteStream) // 아예 카메라 없는게 동작도 안되는구나
+  console.log('remoteStream.getTracks() >>> ', remoteStream.getTracks()) // 아예 카메라 없는게 동작도 안되는구나
   if (!feed) return;
 
   if (!document.getElementById('video_' + feed)) {
@@ -1107,6 +1158,10 @@ function setRemoteVideoElement(remoteStream, feed, display) {
       remoteVideoStreamElem.srcObject = remoteStream;
       FinalElem = remoteVideoStreamElem;
     } 
+    // 여기서 만약 remoteStream의 offer_video를 체크할 수 있다면?
+    // 그게 true면 원래 스크린 보여주고,
+    // 아니면 검정색 화면 보여주고
+
     // if (remoteStream.getTracks().length === 2) { // 상대 카메라 있을 때
     //   const remoteVideoStreamElem = document.createElement('video');
     //   remoteVideoStreamElem.width = 320;

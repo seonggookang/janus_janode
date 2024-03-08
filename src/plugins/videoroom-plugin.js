@@ -205,19 +205,16 @@ class VideoRoomHandle extends Handle {
         case 'attached':
           /* Store room and feed id */
           this.room = room;
-          this.feed = message_data.id;
+          // this.feed = message_data.id;
+          console.log("attached===>", room, message_data.streams[0].feed_id);
+          console.log("message_data.streams >>> ", message_data.streams); // audio, video 정보
+          this.feed = message_data.streams[0].feed_id;  // message_data.id
 
           janode_event.data.feed = message_data.id;
           janode_event.data.display = message_data.display;
           /* [multistream] add streams info to the subscriber joined event */
           if (typeof message_data.streams !== 'undefined') janode_event.data.streams = message_data.streams;
           janode_event.event = PLUGIN_EVENT.SUB_JOINED;
-
-          /// --- 추가한 줄 ---
-          // console.log("attached===>", room, message_data.streams[0].feed_id);
-          // this.room = room;
-          // this.feed = message_data.streams[0].feed_id;  //message_data.id
-          /// --- 추가한 줄 ---
           
           break;
 

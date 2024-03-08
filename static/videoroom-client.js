@@ -186,7 +186,7 @@ function join({ room = myRoom, display = myName, token = null }) {
 
 // 현재 화면에 노출된 peers --> 비디오 : O, 오디오 : O
 // 다른 페이지에 있는 peers --> 비디오 : X, 오디오 : O
-function subscribe({ feed, room = myRoom, offer_video=false, substream, temporal }) {
+function subscribe({ feed, room = myRoom, offer_video, substream, temporal }) {
   // switch에서 (from_feed, to_feed) <<-- 각각에 대해 배열에 담아 처리할 수 있다면?
   const subscribeData = {
     room,
@@ -1050,14 +1050,13 @@ function renderPage(pageNumber) {
   const paginationContainer = document.getElementById('js-pagination');
   paginationContainer.innerHTML = '';
   
-  console.log('allPeople in renderPage >>>>> ', allPeople)
   
-
+  
   // remoteContainers가 비어 있는 경우 함수 종료
   if (remoteContainers.length === 0) {
     return;
   }
-
+  
   console.log('offerCopy in renderPage >>> ', offerCopy); // joined에서 받은 offer랑 동일
   console.log('answerCopy >>> ', answerCopy)
   
@@ -1065,16 +1064,20 @@ function renderPage(pageNumber) {
   // 내가 보고 있는 페이지의 사람이라면 offer_video = true,
   // 다른 페이지의 사람이라면 offer_video = false,
   // 근데 extractedRemotePeer 이게 안 잡힘
+  console.log('allPeople in renderPage >>>>> ', allPeople)
   allPeople.forEach((person, index) => {
     const isCurrentPageItem = index >= startIndex && index < endIndex;
+    // 1번페이지 => 0일때 true, 1일때 false
+    // 2번페이지 => 0일때 false, 1일때 true
     const shouldOfferVideo = isCurrentPageItem && (index - startIndex) < 2;
     pendingOfferMap.clear(); 
     
-    console.log("--------------------------------------------------------")
-    console.log('isCurrentPageItem >>> ', index, isCurrentPageItem); // 0, 1에서만 true, 나머지 false
-    console.log('shouldOfferVideo >>> ', index, shouldOfferVideo);
+    console.log("---------------------------------------")
+    console.log('pageNumber >>> ', pageNumber); // 0, 1에서만 true, 나머지 false
     console.log('person >>> ', person); // 상대방이 나옴
-    console.log("--------------------------------------------------------")
+    console.log('isCurrentPageItem >>> ', index, isCurrentPageItem); // 0, 1에서만 true, 나머지 false
+    // console.log('shouldOfferVideo >>> ', index, shouldOfferVideo);
+    console.log("---------------------------------------")
      // 현재 페이지 항목에 대해서는 offer_video: true로, 나머지: false로 설정
 
     // "did we offer" 라는 에러가 뜬다. 그래서 doOffer를 해줘야 한다.
@@ -1082,9 +1085,9 @@ function renderPage(pageNumber) {
     // 그럼 위에다가 async를 해야함
     // "did we offer ? " error 
     console.log('offerCopy in allPeople >>> ', offerCopy); // joined에서 받은 offer랑 동일 !!!
-    // configure({ feed: person.feed, jsep: offerCopy }); // 되는 듯?
-     // 이 위의것을 기존 'joined'에서 하던걸 여기서도 해봤더니 ICE locally error 떴다!
-     // 즉, socket.on 안에서만 가능하다는 뜻 같은데...
+    configure({ feed: person.feed, jsep: offerCopy }); // 되는 듯?
+    // 이 위의것을 기존 'joined'에서 하던걸 여기서도 해봤더니 ICE locally error 떴다!
+    // 즉, socket.on 안에서만 가능하다는 뜻 같은데...
     // await pc.setRemoteDescription(data.jsep);
     
     // console.log('configure remote sdp OK');
@@ -1093,7 +1096,8 @@ function renderPage(pageNumber) {
       // start(data.feed, answer);
     // }
 
-    // subscribe({ feed: person.feed, roomIWant, offer_video: shouldOfferVideo });
+    // subscribe를 직접하느냐? subscribeTo를 하느냐? 따로 만든 subscribeTo2를 실행하느냐? << 이런다고 되느냐?
+    subscribe({ feed: person.feed, roomIWant, offer_video: isCurrentPageItem });
     // 아 여기서 배열을 벗겨버렸구나
     // subscribeTo2( index, person.feed, roomIWant, shouldOfferVideo ); // 각 
   })
